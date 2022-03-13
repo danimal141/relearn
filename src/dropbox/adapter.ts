@@ -19,15 +19,12 @@ export default class DbxAdapter {
       targets.map(async (path) => {
         const resp = await this.client.sharingListSharedLinks({ path: path });
         const link = resp.result.links[0];
-        if (link == null) {
-          // Create a link to share newly
-          const created = await this.client.sharingCreateSharedLinkWithSettings(
-            { path: path }
-          );
-          return created.result.url;
-        } else {
-          return link.url;
-        }
+        if (link != null) return link.url;
+        // Create a link to share newly
+        const created = await this.client.sharingCreateSharedLinkWithSettings({
+          path: path,
+        });
+        return created.result.url;
       })
     );
     return links;
