@@ -2,8 +2,9 @@ import { Dropbox } from "dropbox";
 import { compact, shuffle, take } from "lodash";
 
 export default class DbxAdapter {
-  static readonly DBX_TARGET_FILE_LIMIT = 50;
-  static readonly DBX_RELEARN_FILE_LIMIT = 10;
+  static readonly TARGET_PATH = process.env.DBX_TARGET_PATH || "";
+  static readonly TARGET_FILE_LIMIT = 50;
+  static readonly RELEARN_FILE_LIMIT = 10;
 
   client: Dropbox;
 
@@ -13,7 +14,7 @@ export default class DbxAdapter {
 
   public async getSharedLinks(): Promise<string[]> {
     const paths = await this.listFilePaths();
-    const targets = take(shuffle(paths), DbxAdapter.DBX_RELEARN_FILE_LIMIT);
+    const targets = take(shuffle(paths), DbxAdapter.RELEARN_FILE_LIMIT);
     const links = await Promise.all(
       targets.map(async (path) => {
         const resp = await this.client.sharingListSharedLinks({ path: path });
@@ -35,8 +36,8 @@ export default class DbxAdapter {
   private async listFilePaths(): Promise<string[]> {
     try {
       const resp = await this.client.filesListFolder({
-        path: process.env.DBX_TARGET_PATH || "",
-        limit: DbxAdapter.DBX_TARGET_FILE_LIMIT,
+        path: DbxAdapter.TARGET_PATH,
+        limit: DbxAdapter.TARGET_FILE_LIMIT,
       });
       return compact(resp.result.entries.map((entry) => entry.path_display));
     } catch (err) {
