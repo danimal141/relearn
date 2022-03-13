@@ -1,4 +1,4 @@
-import { Dropbox, files } from "dropbox";
+import { Dropbox } from "dropbox";
 import { compact, shuffle, take } from "lodash";
 
 export default class DbxAdapter {
