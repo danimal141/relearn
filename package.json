@@ -1,0 +1,12 @@
+{
+  "name": "relearn",
+  "version": "0.1.0",
+  "main": "index.js",
+  "repository": "git@github.com:danimal141/relearn.git",
+  "author": "danimal141 <hideaki.ishii1204@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "16",
+    "typescript": "^4.6.2"
+  }
+}
