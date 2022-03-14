@@ -2,14 +2,15 @@ import { Dropbox } from "dropbox";
 import { compact, shuffle, take } from "lodash";
 
 export default class DbxAdapter {
-  static readonly TARGET_PATH = process.env.DBX_TARGET_PATH || "";
   static readonly TARGET_FILE_LIMIT = 50;
   static readonly RELEARN_FILE_LIMIT = 10;
 
   client: Dropbox;
+  path: string;
 
-  constructor(client: Dropbox) {
+  constructor(client: Dropbox, path: string) {
     this.client = client;
+    this.path = path;
   }
 
   public async getSharedLinks(): Promise<string[]> {
@@ -33,7 +34,7 @@ export default class DbxAdapter {
   private async listFilePaths(): Promise<string[]> {
     try {
       const resp = await this.client.filesListFolder({
-        path: DbxAdapter.TARGET_PATH,
+        path: this.path,
         limit: DbxAdapter.TARGET_FILE_LIMIT,
       });
       return compact(resp.result.entries.map((entry) => entry.path_display));
