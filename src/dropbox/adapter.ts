@@ -5,8 +5,8 @@ export default class DbxAdapter {
   static readonly TARGET_FILE_LIMIT = 50;
   static readonly RELEARN_FILE_LIMIT = 10;
 
-  client: Dropbox;
-  path: string;
+  private client: Dropbox;
+  private path: string;
 
   constructor(client: Dropbox, path: string) {
     this.client = client;
