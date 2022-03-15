@@ -3,7 +3,7 @@ import { compact, shuffle, take } from "lodash";
 
 export default class DbxAdapter {
   static readonly TARGET_FILE_LIMIT = 50;
-  static readonly RELEARN_FILE_LIMIT = 10;
+  static readonly RELEARN_FILE_LIMIT = 5;
 
   private client: Dropbox;
   private path: string;
