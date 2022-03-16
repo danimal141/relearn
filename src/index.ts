@@ -19,8 +19,6 @@ import SlackSender from "./slack/sender";
   const links = await adapter.getSharedLinks();
 
   links.forEach(async (link) => {
-    console.log(`sending ${link}`);
-
     await sender.send(link);
   });
 })();
