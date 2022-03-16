@@ -1,0 +1,37 @@
+name: relearn
+
+on:
+  schedule:
+    - cron: '0 14 * * *' # 22:00 JST
+  workflow_dispatch:
+    inputs:
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.14.0]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{matrix.node-version}}
+      - uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: node-dependencies-${{ hashFiles('yarn.lock') }}
+      - name: Install JavaScript dependencies
+        run: |
+          yarn install
+      - name: Start
+        run: |
+         yarn build && yarn start
+        env:
+          DBX_CLIENT_ID: ${{ secrets.DBX_CLIENT_ID }}
+          DBX_CLIENT_SECRET: ${{ secrets.DBX_CLIENT_SECRET }}
+          DBX_REFRESH_TOKEN: ${{ secrets.DBX_REFRESH_TOKEN }}
+          DBX_TARGET_PATH: ${{ secrets.DBX_TARGET_PATH }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
