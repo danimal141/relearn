@@ -1,6 +1,6 @@
 import { IncomingWebhook, IncomingWebhookResult } from "@slack/webhook";
 
-export default class SlackSender {
+export default class SlackAdapter {
   private hook: IncomingWebhook;
 
   constructor(url: string) {

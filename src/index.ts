@@ -1,13 +1,13 @@
 import { Dropbox } from "dropbox";
 
 import DbxAdapter from "./dropbox/adapter";
-import SlackSender from "./slack/sender";
+import SlackAdapter from "./slack/adapter";
 
 (async () => {
   if (process.env.SLACK_WEBHOOK_URL == null) {
     throw "SLACK_WEBHOOK_URL must be set";
   }
-  const sender = new SlackSender(process.env.SLACK_WEBHOOK_URL);
+  const slackAdapter = new SlackAdapter(process.env.SLACK_WEBHOOK_URL);
 
   const dbxClient = new Dropbox({
     refreshToken: process.env.DBX_REFRESH_TOKEN,
@@ -15,10 +15,10 @@ import SlackSender from "./slack/sender";
     clientSecret: process.env.DBX_CLIENT_SECRET,
   });
   const path = process.env.DBX_TARGET_PATH || "";
-  const adapter = new DbxAdapter(dbxClient, path);
-  const links = await adapter.getSharedLinks();
+  const dbxAdapter = new DbxAdapter(dbxClient, path);
+  const links = await dbxAdapter.getSharedLinks();
 
   links.forEach(async (link) => {
-    await sender.send(link);
+    await slackAdapter.send(link);
   });
 })();
