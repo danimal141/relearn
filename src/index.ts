@@ -34,6 +34,7 @@ import SlackAdapter from "./slack/adapter";
     // There is no target which I can relearn
     // Revive assets
     await dbxAdapter.reviveSharedFiles();
+    // Try relearning next time
     return;
   }
 

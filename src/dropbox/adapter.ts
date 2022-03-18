@@ -3,8 +3,8 @@ import { Dropbox, files } from "dropbox";
 import { compact, shuffle, take } from "lodash";
 
 export default class DbxAdapter {
-  static readonly RELEARN_FILE_LIMIT = 5;
-  static readonly TARGET_FILE_LIMIT = 100;
+  static readonly TARGET_FILE_LIMIT = 5;
+  static readonly ASSET_FILE_LIMIT = 100;
   static readonly REVIVE_FILE_LIMIT = 100;
 
   private client: Dropbox;
@@ -106,7 +106,7 @@ export default class DbxAdapter {
     try {
       const resp = await this.client.filesListFolder({
         path: path || this.rootPath,
-        limit: limit || DbxAdapter.TARGET_FILE_LIMIT,
+        limit: limit || DbxAdapter.ASSET_FILE_LIMIT,
       });
       return resp.result.entries;
     } catch (err) {
