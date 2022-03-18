@@ -1,4 +1,5 @@
-import { async, Dropbox, files } from "dropbox";
+// import { async, Dropbox, files } from "dropbox";
+import { Dropbox, files } from "dropbox";
 import { compact, shuffle, take } from "lodash";
 
 export default class DbxAdapter {
