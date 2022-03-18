@@ -40,7 +40,7 @@ export default class DbxAdapter {
         to_path: path.replace(this.rootPath, this.tmpPath),
       };
     });
-    this.moveBatch(entries);
+    this.moveFilesBatch(entries);
   }
 
   public async getTargetPaths(): Promise<string[]> {
@@ -62,7 +62,7 @@ export default class DbxAdapter {
         to_path: path.replace(this.tmpPath, this.rootPath),
       };
     });
-    this.moveBatch(entries);
+    this.moveFilesBatch(entries);
   }
 
   private async getPaths(
@@ -77,7 +77,7 @@ export default class DbxAdapter {
     return take(shuffle(paths), limit);
   }
 
-  private async moveBatch(entries: files.RelocationPath[]) {
+  private async moveFilesBatch(entries: files.RelocationPath[]) {
     await this.client.filesMoveBatchV2({
       entries: entries,
     });
