@@ -6,6 +6,8 @@ This system reminds me of your favorite screenshots in Dropbox every day. It pic
   - Get your refresh token, client id, client secret.
 - Create your Slack app from [the slack api page](https://api.slack.com/apps).
   - Get your webhook url.
+- Please fork this repository and set required environment variables in the Actions secrets.
+  - See `.env.template`.
 
 ## Development
 - Develop
