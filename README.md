@@ -1,5 +1,5 @@
 # relearn
-This system reminds me of your favorite screenshots in Dropbox every day. It picks files up from Dropbox and notify the shared links to your Slack channel.
+This system reminds you of your favorite screenshots in Dropbox every day. It picks files up from Dropbox and notifies the shared links to your Slack channel.
 
 ## Set up
 - Create you Dropbox app from [the developer page](https://www.dropbox.com/developers/documentation).
