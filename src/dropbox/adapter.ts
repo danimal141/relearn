@@ -78,10 +78,14 @@ export default class DbxAdapter {
   }
 
   private async moveBatch(entries: files.RelocationPath[]) {
-    const resp = await this.client.filesMoveBatchV2({
+    await this.client.filesMoveBatchV2({
       entries: entries,
     });
+
     // Debug
+    // const resp = await this.client.filesMoveBatchV2({
+    //   entries: entries,
+    // });
     // if (resp.result['.tag'] === 'async_job_id') {
     //   const jobId = (resp.result as async.LaunchResultBaseAsyncJobId).async_job_id
     //   const jobResp = await this.client.filesMoveBatchCheckV2({ async_job_id: jobId })
