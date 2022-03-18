@@ -2,7 +2,7 @@
 This system reminds you of your favorite screenshots in Dropbox every day. It picks files up from Dropbox and notifies the shared links to your Slack channel.
 
 ## Motivation
-When I find some good tweets or posts etc..I take a screenshot and upload it to my Dropbox, but I never check it again...This system reminds you of the screenshots randomly every day, and you can relearn them.
+When I find some good tweets or posts etc..I take a screenshot and upload it to my Dropbox, but I never check it again... This system reminds you of the screenshots randomly every day, and you can relearn them.
 
 ## Set up
 - Create you Dropbox app from [the developer page](https://www.dropbox.com/developers/documentation).
