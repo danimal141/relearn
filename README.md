@@ -1,6 +1,4 @@
 # relearn
-My relearning system.
-
 This system reminds me of your favorite screenshots in Dropbox every day. It picks files up from Dropbox and notify the shared links to your Slack channel.
 
 ## Set up
