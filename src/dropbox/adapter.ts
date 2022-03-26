@@ -33,59 +33,65 @@ export default class DbxAdapter {
     return links;
   }
 
-  public async evacuateSharedFiles(paths: string[]) {
+  public async evacuateRelearnedFiles(paths: string[]): Promise<number> {
+    // root path => tmp path
     const entries = paths.map((path) => {
       return {
         from_path: path,
         to_path: path.replace(this.rootPath, this.tmpPath),
       };
     });
-    this.moveFilesBatch(entries);
+    return this.moveFilesBatch(entries);
   }
 
   public async getTargetPaths(): Promise<string[]> {
-    const entries = await this.listFileEntries();
-    return this.getPaths(entries, DbxAdapter.TARGET_FILE_LIMIT);
+    const paths = await this.listFilePaths();
+    if (this.isTargetEmpty(paths)) return [];
+
+    return take(shuffle(paths), DbxAdapter.TARGET_FILE_LIMIT);
   }
 
-  public async reviveSharedFiles() {
-    const tmpEntries = await this.listFileEntries(
+  public async reviveSharedFiles(): Promise<number> {
+    const paths = await this.listFilePaths(
       this.tmpPath,
       DbxAdapter.REVIVE_FILE_LIMIT
     );
-    const paths = await this.getPaths(tmpEntries, DbxAdapter.REVIVE_FILE_LIMIT);
-    if (paths.length === 0) return;
 
+    // tmp path => root path
     const entries = paths.map((path) => {
       return {
         from_path: path,
         to_path: path.replace(this.tmpPath, this.rootPath),
       };
     });
-    this.moveFilesBatch(entries);
+    return this.moveFilesBatch(entries);
   }
 
-  private async getPaths(
-    entries: Array<
-      | files.FileMetadataReference
-      | files.FolderMetadataReference
-      | files.DeletedMetadataReference
-    >,
-    limit: number
+  private async listFilePaths(
+    path?: string,
+    limit?: number
   ): Promise<string[]> {
-    const paths = compact(entries.map((entry) => entry.path_display));
-    return take(shuffle(paths), limit);
+    try {
+      const resp = await this.client.filesListFolder({
+        path: path || this.rootPath,
+        limit: limit || DbxAdapter.ASSET_FILE_LIMIT,
+      });
+      return compact(resp.result.entries.map((entry) => entry.path_display));
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
   }
 
-  private async moveFilesBatch(entries: files.RelocationPath[]) {
-    await this.client.filesMoveBatchV2({
+  private async moveFilesBatch(
+    entries: files.RelocationPath[]
+  ): Promise<number> {
+    const resp = await this.client.filesMoveBatchV2({
       entries: entries,
     });
+    return resp.status;
 
     // Debug
-    // const resp = await this.client.filesMoveBatchV2({
-    //   entries: entries,
-    // });
     // if (resp.result['.tag'] === 'async_job_id') {
     //   const jobId = (resp.result as async.LaunchResultBaseAsyncJobId).async_job_id
     //   const jobResp = await this.client.filesMoveBatchCheckV2({ async_job_id: jobId })
@@ -93,25 +99,7 @@ export default class DbxAdapter {
     // }
   }
 
-  private async listFileEntries(
-    path?: string,
-    limit?: number
-  ): Promise<
-    Array<
-      | files.FileMetadataReference
-      | files.FolderMetadataReference
-      | files.DeletedMetadataReference
-    >
-  > {
-    try {
-      const resp = await this.client.filesListFolder({
-        path: path || this.rootPath,
-        limit: limit || DbxAdapter.ASSET_FILE_LIMIT,
-      });
-      return resp.result.entries;
-    } catch (err) {
-      console.error(err);
-      return [];
-    }
+  private isTargetEmpty(paths: string[]): boolean {
+    return paths.length === 1 && paths[0] === this.tmpPath;
   }
 }

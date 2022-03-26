@@ -2,6 +2,7 @@ import { Dropbox } from "dropbox";
 
 import DbxAdapter from "./dropbox/adapter";
 import SlackAdapter from "./slack/adapter";
+import Executor from "./relearn/executor";
 
 (async () => {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
@@ -19,6 +20,7 @@ import SlackAdapter from "./slack/adapter";
   }
 
   const slackAdapter = new SlackAdapter(webhookUrl);
+
   const dbxClient = new Dropbox({
     refreshToken: dbxRefreshToken,
     clientId: dbxClientId,
@@ -28,23 +30,9 @@ import SlackAdapter from "./slack/adapter";
     dbxClient,
     process.env.DBX_TARGET_PATH || ""
   );
-  const paths = await dbxAdapter.getTargetPaths();
 
-  if (paths.length === 0) {
-    // There is no target which I can relearn
-    // Revive assets
-    await dbxAdapter.reviveSharedFiles();
-    // Try relearning next time
-    return;
-  }
+  const executor = new Executor(dbxAdapter, slackAdapter);
 
-  const links = await dbxAdapter.getSharedLinks(paths);
-
-  // Send shared links to Slack
-  links.forEach(async (link) => {
-    await slackAdapter.send(link);
-  });
-
-  // Evacuate the shared files
-  await dbxAdapter.evacuateSharedFiles(paths);
+  const status = await executor.relearn();
+  console.log(status);
 })();
