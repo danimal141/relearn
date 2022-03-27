@@ -2,7 +2,7 @@
 This system reminds us of our favorite screenshots in Dropbox every day. It picks files up from Dropbox and notifies the shared links to your Slack channel.
 
 ## Architecture
-![relearn drawio](https://user-images.githubusercontent.com/1821807/160263681-c8cefe45-68d7-4867-b549-f963a1986b7d.png)
+![relearn drawio](https://user-images.githubusercontent.com/1821807/160268206-2c1dd9d3-0f62-4166-94d3-4f742f6f4e55.png)
 
 ## Motivation
 When I find some good tweets or posts etc.. I take a screenshot and upload it to my Dropbox, but I never check it again...
