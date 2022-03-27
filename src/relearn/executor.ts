@@ -21,6 +21,8 @@ export default class Executor {
     }
 
     const links = await this.dbxAdapter.getSharedLinks(paths);
+
+    // Send shared links to Slack
     for await (const link of links) {
       await this.slackAdapter.send(link);
     }
