@@ -8,6 +8,9 @@ export default class SlackAdapter {
   }
 
   public async send(message: string): Promise<IncomingWebhookResult> {
-    return this.hook.send(message);
+    return this.hook.send({
+      text: `<${message}>`,
+      unfurl_links: true, // To show the preview
+    });
   }
 }

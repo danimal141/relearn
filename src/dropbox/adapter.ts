@@ -6,6 +6,7 @@ export default class DbxAdapter {
   static readonly TARGET_FILE_LIMIT = 5;
   static readonly ASSET_FILE_LIMIT = 100;
   static readonly REVIVE_FILE_LIMIT = 100;
+  static readonly DL_DROPBOX_URL_BASE = "https://dl.dropboxusercontent.com";
 
   private client: Dropbox;
   private rootPath: string;
@@ -17,12 +18,13 @@ export default class DbxAdapter {
     this.tmpPath = `${path}/tmp`;
   }
 
-  public async getSharedLinks(paths: string[]): Promise<string[]> {
+  public async getAssetLinks(paths: string[]): Promise<string[]> {
     const links = await Promise.all(
       paths.map(async (path) => {
         const resp = await this.client.sharingListSharedLinks({ path: path });
         const link = resp.result.links[0];
         if (link != null) return link.url;
+
         // Create a link to share newly
         const created = await this.client.sharingCreateSharedLinkWithSettings({
           path: path,
@@ -30,7 +32,11 @@ export default class DbxAdapter {
         return created.result.url;
       })
     );
-    return links;
+    return compact(links).map((link) => {
+      const path = new URL(link).pathname;
+      // convert the direct link
+      return DbxAdapter.DL_DROPBOX_URL_BASE + path;
+    });
   }
 
   public async evacuateRelearnedFiles(paths: string[]): Promise<number> {
@@ -76,7 +82,12 @@ export default class DbxAdapter {
         path: path || this.rootPath,
         limit: limit || DbxAdapter.ASSET_FILE_LIMIT,
       });
-      return compact(resp.result.entries.map((entry) => entry.path_display));
+      const paths = compact(
+        resp.result.entries.map((entry) =>
+          entry[".tag"] === "file" ? entry.path_display : null
+        )
+      );
+      return paths;
     } catch (err) {
       console.error(err);
       return [];
