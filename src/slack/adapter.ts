@@ -8,6 +8,7 @@ export default class SlackAdapter {
   }
 
   public async send(message: string): Promise<IncomingWebhookResult> {
+    // Reference: https://api.slack.com/reference/messaging/link-unfurling#configure_scopes
     return this.hook.send({
       text: `<${message}>`,
       unfurl_links: true, // To show the preview
