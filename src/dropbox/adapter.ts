@@ -35,6 +35,7 @@ export default class DbxAdapter {
     return compact(links).map((link) => {
       const path = new URL(link).pathname;
       // convert the direct link
+      // "www.dropbox.com" -> "dl.dropboxusercontent.com" / strip "?dl=0"
       return DbxAdapter.DL_DROPBOX_URL_BASE + path;
     });
   }
