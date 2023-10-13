@@ -25,7 +25,7 @@
   "dependencies": {
     "@slack/webhook": "^6.1.0",
     "@types/lodash": "^4.14.179",
-    "@types/node": "16",
+    "@types/node": "18",
     "@typescript-eslint/eslint-plugin": "^5.14.0",
     "@typescript-eslint/parser": "^5.14.0",
     "dropbox": "^10.26.0",
