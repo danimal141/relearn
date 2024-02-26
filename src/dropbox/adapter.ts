@@ -6,7 +6,7 @@ export default class DbxAdapter {
   static readonly TARGET_FILE_LIMIT = 5;
   static readonly ASSET_FILE_LIMIT = 100;
   static readonly REVIVE_FILE_LIMIT = 100;
-  // static readonly DL_DROPBOX_URL_BASE = "https://dl.dropboxusercontent.com";
+  static readonly DL_DROPBOX_URL_BASE = "https://dl.dropboxusercontent.com";
 
   private client: Dropbox;
   private rootPath: string;
@@ -32,13 +32,13 @@ export default class DbxAdapter {
         return created.result.url;
       })
     );
-    return links;
-    // return compact(links).map((link) => {
-    //   const path = new URL(link).pathname;
-    //   // convert the direct link
-    //   // "www.dropbox.com" -> "dl.dropboxusercontent.com" / strip "?dl=0"
-    //   return DbxAdapter.DL_DROPBOX_URL_BASE + path;
-    // });
+    return compact(links).map((link) => {
+      const url = new URL(link);
+      const path = url.pathname + url.search;
+      // convert the direct link
+      // "www.dropbox.com" -> "dl.dropboxusercontent.com"
+      return DbxAdapter.DL_DROPBOX_URL_BASE + path;
+    });
   }
 
   public async evacuateRelearnedFiles(paths: string[]): Promise<number> {
