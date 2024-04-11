@@ -3,7 +3,7 @@ import { Dropbox, files } from "dropbox";
 import { compact, shuffle, take } from "lodash";
 
 export default class DbxAdapter {
-  static readonly TARGET_FILE_LIMIT = 10;
+  static readonly TARGET_FILE_LIMIT = 5;
   static readonly ASSET_FILE_LIMIT = 100;
   static readonly REVIVE_FILE_LIMIT = 100;
   static readonly DL_DROPBOX_URL_BASE = "https://dl.dropboxusercontent.com";
