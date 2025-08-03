@@ -1,7 +1,7 @@
 {
   "name": "relearn",
   "version": "2.0.0",
-  "description": "This system reminds us of our favorite screenshots in Dropbox every day",
+  "description": "This system reminds us of our favorite screenshots in Google Drive every day",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -13,7 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "keywords": [
-    "dropbox",
+    "googledrive",
     "slack",
     "screenshot",
     "notification"
@@ -21,7 +21,8 @@
   "author": "danimal141",
   "license": "MIT",
   "dependencies": {
-    "@slack/webhook": "^7.0.3"
+    "@slack/webhook": "^7.0.3",
+    "googleapis": "^144.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

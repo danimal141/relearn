@@ -70,7 +70,7 @@ relearn/
 ├── biome.json           # Biome設定
 ├── tsconfig.json        # TypeScript設定
 ├── package.json         # npm設定
-├── .env.example         # 環境変数サンプル
+├── .env.sample         # 環境変数サンプル
 └── README.md
 ```
 
