@@ -1,16 +1,36 @@
-import Executor from "./relearn/executor";
-import SlackAdapter from "./slack/adapter";
+import { runRelearn } from "./relearn/relearn";
 
-(async () => {
-  const webhookUrl = process.env["SLACK_WEBHOOK_URL"];
+const main = async (): Promise<void> => {
+  console.log("🚀 Starting relearn workflow...");
 
-  if (webhookUrl == null) {
-    throw "SLACK_WEBHOOK_URL environment variable is not set";
+  const result = await runRelearn();
+
+  if (result.success) {
+    const { images, slackResults, status } = result.data;
+
+    console.log(`✅ Relearn completed with status: ${status}`);
+    console.log(`📸 Found ${images.files.length} images`);
+    console.log(`🔗 Created ${images.links.length} public links`);
+    console.log(`💬 Sent ${slackResults.length} Slack messages`);
+
+    if (images.files.length > 0) {
+      console.log("\n📋 Image details:");
+      images.files.forEach((file, index) => {
+        console.log(`  ${index + 1}. ${file.name} (${file.mimeType})`);
+      });
+    }
+
+    if (status === "partial") {
+      console.log("⚠️  Some operations failed, but images were processed successfully");
+    }
+  } else {
+    console.error(`❌ Relearn failed: ${result.error.message}`);
+    console.error(`Error type: ${result.error.type}`);
+    process.exit(1);
   }
+};
 
-  const slackAdapter = new SlackAdapter(webhookUrl);
-  const executor = new Executor(slackAdapter);
-
-  const status = await executor.relearn();
-  console.log(status);
-})();
+main().catch((error) => {
+  console.error("💥 Unexpected error:", error);
+  process.exit(1);
+});
