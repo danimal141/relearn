@@ -131,3 +131,7 @@ dist
 
 # Cloudflare
 .wrangler/
+
+# local db
+prisma/dev.db
+prisma/dev.db*
