@@ -1,34 +1,18 @@
-import DbxAdapter from "../dropbox/adapter";
-import SlackAdapter from "../slack/adapter";
+import type SlackAdapter from "../slack/adapter";
 
 export default class Executor {
-  private dbxAdapter: DbxAdapter;
   private slackAdapter: SlackAdapter;
 
-  constructor(dbxAdapter: DbxAdapter, slackAdapter: SlackAdapter) {
-    this.dbxAdapter = dbxAdapter;
+  constructor(slackAdapter: SlackAdapter) {
     this.slackAdapter = slackAdapter;
   }
 
   public async relearn(): Promise<number> {
-    const paths = await this.dbxAdapter.getTargetPaths();
-    if (paths.length === 0) {
-      // There is no target which we can relearn
-      // Revive assets
-      const status = await this.dbxAdapter.reviveSharedFiles();
-      // Try relearning next time
-      return status;
-    }
+    // Send a test message to Slack
+    const message = "Hello from relearn v2! 🚀";
+    await this.slackAdapter.send(message);
 
-    const links = await this.dbxAdapter.getAssetLinks(paths);
-
-    // Send shared links to Slack
-    for await (const link of links) {
-      await this.slackAdapter.send(link);
-    }
-
-    // Evacuate the shared files
-    const status = await this.dbxAdapter.evacuateRelearnedFiles(paths);
-    return status;
+    console.log("Message sent successfully");
+    return 1;
   }
 }

@@ -1,4 +1,4 @@
-import { IncomingWebhook, IncomingWebhookResult } from "@slack/webhook";
+import { IncomingWebhook, type IncomingWebhookResult } from "@slack/webhook";
 
 export default class SlackAdapter {
   private hook: IncomingWebhook;

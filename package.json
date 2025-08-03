@@ -1,49 +1,35 @@
 {
   "name": "relearn",
-  "version": "0.1.0",
-  "main": "./dist/index.js",
-  "repository": "git@github.com:danimal141/relearn.git",
-  "author": "danimal141 <hideaki.ishii1204@gmail.com>",
-  "license": "MIT",
+  "version": "2.0.0",
+  "description": "This system reminds us of our favorite screenshots in Dropbox every day",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "env-cmd -f .env ts-node src/index.ts",
-    "dev:watch": "env-cmd -f .env ts-node-dev --respawn src/index.ts",
-    "build:local": "env-cmd -f .env npm-run-all clean tsc",
-    "start:local": "env-cmd -f .env node .",
-    "tsc": "tsc",
-    "clean": "rimraf dist/*",
-    "build": "npm-run-all clean tsc",
-    "start": "node .",
-    "check-types": "tsc --noEmit",
-    "eslint": "eslint src/**/*.ts",
-    "eslint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write 'src/**/*.{js,ts,json}'",
-    "lint": "npm-run-all eslint check-types",
-    "lint:fix": "npm-run-all eslint:fix check-types format",
-    "prepare": "husky install"
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsx watch src/index.ts",
+    "lint": "biome lint src/",
+    "format": "biome format --write src/",
+    "check": "biome check --write src/",
+    "type-check": "tsc --noEmit"
   },
+  "keywords": [
+    "dropbox",
+    "slack",
+    "screenshot",
+    "notification"
+  ],
+  "author": "danimal141",
+  "license": "MIT",
   "dependencies": {
-    "@slack/webhook": "^6.1.0",
-    "@types/lodash": "^4.14.179",
-    "@types/node": "16",
-    "@typescript-eslint/eslint-plugin": "^5.14.0",
-    "@typescript-eslint/parser": "^5.14.0",
-    "dropbox": "^10.26.0",
-    "env-cmd": "^10.1.0",
-    "eslint": "^8.11.0",
-    "eslint-config-prettier": "^8.5.0",
-    "husky": "^7.0.4",
-    "lint-staged": "^12.3.5",
-    "lodash": "^4.17.21",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.5.1",
-    "rimraf": "^4.0.0",
-    "ts-node": "^10.7.0",
-    "ts-node-dev": "^1.1.8",
-    "typescript": "^4.6.2"
+    "@slack/webhook": "^7.0.3"
   },
-  "lint-staged": {
-    "*.{js,ts}": "eslint --cache --fix",
-    "*.{js,ts,json}": "prettier --write"
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
