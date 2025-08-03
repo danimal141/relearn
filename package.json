@@ -14,6 +14,8 @@
     "db:generate": "prisma generate",
     "db:create": "wrangler d1 create relearn-db",
     "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "wrangler d1 execute relearn-db --local --file=./prisma/migrations/init/migration.sql",
+    "db:migrate:prod": "wrangler d1 execute relearn-db --remote --file=./prisma/migrations/init/migration.sql",
     "db:studio": "prisma studio"
   },
   "keywords": [
