@@ -1,5 +1,6 @@
 import { IncomingWebhook } from "@slack/webhook";
-import type { SlackWebhook, SlackResult, AsyncResult } from "../types";
+import type { AsyncResult } from "../types";
+import type { SlackWebhook, SlackResult } from "./types";
 
 // Webhook creation
 export const createWebhook = (url: string): AsyncResult<SlackWebhook> => {

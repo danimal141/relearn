@@ -31,7 +31,8 @@
         "noUselessLoneBlockStatements": "error",
         "noUselessRename": "error",
         "noUselessTernary": "error",
-        "noWith": "error"
+        "noWith": "error",
+        "useLiteralKeys": "off"
       },
       "correctness": {
         "noUnusedVariables": "error",

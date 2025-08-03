@@ -1,0 +1,24 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ProcessedImage {
+  id            String   @id
+  fileName      String   @map("file_name")
+  driveFileId   String   @unique @map("drive_file_id")
+  processedAt   DateTime @map("processed_at")
+  movedToSaved  Boolean  @default(false) @map("moved_to_saved")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("processed_images")
+}

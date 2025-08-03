@@ -1,0 +1,26 @@
+name = "relearn"
+main = "src/worker.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 database bindings
+[[d1_databases]]
+binding = "DB"
+database_name = "relearn-db"
+database_id = "a9c5bf31-696f-4b74-817e-d4146a628922"
+
+# Environment variables (for production)
+[env.production]
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "relearn-db"
+database_id = "your-production-database-id-here"
+
+# Build configuration
+[build]
+command = "npm run build"
+
+# Local development configuration
+[dev]
+port = 8787
+local_protocol = "https"

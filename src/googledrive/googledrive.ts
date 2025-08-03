@@ -1,12 +1,13 @@
 import { google } from "googleapis";
+import type { AsyncResult, AppError } from "../types";
 import type {
   AuthClient,
   DriveClient,
   DriveFile,
-  DriveCredentials,
-  AsyncResult,
-  AppError
-} from "../types";
+  DriveCredentials
+} from "./types";
+import type { D1Database } from "../cloudflare/d1/types";
+import * as D1 from "../cloudflare/d1/client";
 
 // Authentication functions
 export const createAuthClient = (serviceAccountKey: string): AsyncResult<AuthClient> => {
@@ -226,6 +227,347 @@ export const getImageMetadata = async (
       error: {
         type: "DriveError",
         message: `Failed to fetch metadata for file ${fileId}: ${String(error)}`
+      }
+    };
+  }
+};
+
+// Folder operations
+export const createFolder = async (
+  drive: DriveClient,
+  folderName: string,
+  parentFolderId: string
+): AsyncResult<DriveFile> => {
+  try {
+    const response = await drive.files.create({
+      requestBody: {
+        name: folderName,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [parentFolderId]
+      },
+      fields: "id, name, parents"
+    });
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "DriveError",
+        message: `Failed to create folder ${folderName}: ${String(error)}`
+      }
+    };
+  }
+};
+
+export const findFolder = async (
+  drive: DriveClient,
+  folderName: string,
+  parentFolderId: string
+): AsyncResult<DriveFile | null> => {
+  try {
+    const response = await drive.files.list({
+      q: `name='${folderName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed = false`,
+      fields: "files(id, name, parents)",
+      pageSize: 1
+    });
+
+    const folders = response.data.files || [];
+    return { success: true, data: folders[0] || null };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "DriveError",
+        message: `Failed to find folder ${folderName}: ${String(error)}`
+      }
+    };
+  }
+};
+
+export const ensureFolderExists = async (
+  drive: DriveClient,
+  folderName: string,
+  parentFolderId: string
+): AsyncResult<DriveFile> => {
+  // First try to find existing folder
+  const findResult = await findFolder(drive, folderName, parentFolderId);
+
+  if (!findResult.success) {
+    return findResult;
+  }
+
+  if (findResult.data) {
+    return { success: true, data: findResult.data };
+  }
+
+  // Create folder if it doesn't exist
+  return createFolder(drive, folderName, parentFolderId);
+};
+
+// File movement operations
+export const moveFileToFolder = async (
+  drive: DriveClient,
+  fileId: string,
+  targetFolderId: string
+): AsyncResult<DriveFile> => {
+  try {
+    // First get current parents
+    const fileResponse = await drive.files.get({
+      fileId,
+      fields: "parents"
+    });
+
+    const currentParents = fileResponse.data.parents || [];
+    const previousParents = currentParents.join(",");
+
+    // Move file to new folder
+    const response = await drive.files.update({
+      fileId,
+      addParents: targetFolderId,
+      removeParents: previousParents,
+      fields: "id, name, parents"
+    });
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "DriveError",
+        message: `Failed to move file ${fileId} to folder ${targetFolderId}: ${String(error)}`
+      }
+    };
+  }
+};
+
+export const moveImageToSaved = async (
+  drive: DriveClient,
+  fileId: string,
+  baseFolderId: string
+): AsyncResult<DriveFile> => {
+  try {
+    // Ensure saved folder exists
+    const savedFolderResult = await ensureFolderExists(drive, "saved", baseFolderId);
+
+    if (!savedFolderResult.success) {
+      return savedFolderResult;
+    }
+
+    if (!savedFolderResult.data.id) {
+      return {
+        success: false,
+        error: {
+          type: "DriveError",
+          message: "Saved folder ID is missing"
+        }
+      };
+    }
+
+    // Move file to saved folder
+    return moveFileToFolder(drive, fileId, savedFolderResult.data.id);
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "DriveError",
+        message: `Failed to move image to saved folder: ${String(error)}`
+      }
+    };
+  }
+};
+
+// Batch file movement
+export const moveMultipleImagesToSaved = async (
+  drive: DriveClient,
+  fileIds: readonly string[],
+  baseFolderId: string
+): AsyncResult<readonly DriveFile[]> => {
+  try {
+    // Ensure saved folder exists
+    const savedFolderResult = await ensureFolderExists(drive, "saved", baseFolderId);
+
+    if (!savedFolderResult.success) {
+      return savedFolderResult;
+    }
+
+    if (!savedFolderResult.data.id) {
+      return {
+        success: false,
+        error: {
+          type: "DriveError",
+          message: "Saved folder ID is missing"
+        }
+      };
+    }
+
+    const movePromises = fileIds.map(fileId => {
+      if (!savedFolderResult.data.id) {
+        throw new Error("Saved folder ID is missing");
+      }
+      return moveFileToFolder(drive, fileId, savedFolderResult.data.id);
+    });
+    const moveResults = await Promise.all(movePromises);
+
+    const successfulMoves: DriveFile[] = [];
+    const errors: AppError[] = [];
+
+    for (const result of moveResults) {
+      if (result.success) {
+        successfulMoves.push(result.data);
+      } else {
+        errors.push(result.error);
+      }
+    }
+
+    // If any moves were successful, return them
+    if (successfulMoves.length > 0) {
+      return { success: true, data: successfulMoves };
+    }
+
+    // If no moves were successful, return the first error
+    return {
+      success: false,
+      error: errors[0] || {
+        type: "DriveError",
+        message: "Failed to move any images to saved folder"
+      }
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "DriveError",
+        message: `Failed to move multiple images to saved: ${String(error)}`
+      }
+    };
+  }
+};
+
+// Unprocessed image filtering
+export const getUnprocessedImageFiles = async (
+  drive: DriveClient,
+  db: D1Database,
+  folderId: string
+): AsyncResult<readonly DriveFile[]> => {
+  // First get all image files
+  const allImagesResult = await getImageFiles(drive, folderId);
+
+  if (!allImagesResult.success) {
+    return allImagesResult;
+  }
+
+  const allImages = allImagesResult.data;
+
+  if (allImages.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  // Get file IDs for database check
+  const fileIds = allImages
+    .map(file => file.id)
+    .filter((id): id is string => id !== undefined && id !== null);
+
+  if (fileIds.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  // Get unprocessed file IDs from database
+  const unprocessedIdsResult = await D1.getUnprocessedImageIds(db, fileIds);
+
+  if (!unprocessedIdsResult.success) {
+    return unprocessedIdsResult;
+  }
+
+  const unprocessedIdSet = new Set(unprocessedIdsResult.data);
+
+  // Filter to only unprocessed images
+  const unprocessedImages = allImages.filter(image =>
+    image.id && unprocessedIdSet.has(image.id)
+  );
+
+  return { success: true, data: unprocessedImages };
+};
+
+export const getUnprocessedRandomImages = async (
+  drive: DriveClient,
+  db: D1Database,
+  folderId: string,
+  count = 1
+): AsyncResult<readonly DriveFile[]> => {
+  const unprocessedResult = await getUnprocessedImageFiles(drive, db, folderId);
+
+  if (!unprocessedResult.success) {
+    return unprocessedResult;
+  }
+
+  const selectedFiles = selectRandomItems(unprocessedResult.data, count);
+  return { success: true, data: selectedFiles };
+};
+
+// Combined workflow functions
+export const processAndMoveImages = async (
+  drive: DriveClient,
+  db: D1Database,
+  images: readonly DriveFile[],
+  baseFolderId: string
+): AsyncResult<void> => {
+  try {
+    // Record processed images in database
+    const now = new Date().toISOString();
+    const processedImages = images
+      .filter(image => image.id && image.name)
+      .map(image => {
+        if (!image.id || !image.name) {
+          throw new Error("Image ID or name is missing");
+        }
+        return {
+          id: `${image.id}_${Date.now()}`,
+          file_name: image.name,
+          drive_file_id: image.id,
+          processed_at: now,
+          moved_to_saved: false
+        };
+      });
+
+    if (processedImages.length === 0) {
+      return { success: true, data: undefined };
+    }
+
+    // Insert to database
+    const insertResult = await D1.insertMultipleProcessedImages(db, processedImages);
+
+    if (!insertResult.success) {
+      return insertResult;
+    }
+
+    // Move images to saved folder
+    const fileIds = processedImages.map(img => img.drive_file_id);
+    const moveResult = await moveMultipleImagesToSaved(drive, fileIds, baseFolderId);
+
+    if (!moveResult.success) {
+      // Images were recorded but not moved - this is partial success
+      // Mark them as not moved in the database (already false by default)
+      return {
+        success: true,
+        data: undefined
+      };
+    }
+
+    // Mark images as moved in database
+    const markPromises = fileIds.map(fileId =>
+      D1.markImageAsMoved(db, fileId)
+    );
+
+    await Promise.all(markPromises);
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "DriveError",
+        message: `Failed to process and move images: ${String(error)}`
       }
     };
   }
