@@ -7,9 +7,9 @@ async function testDatabase() {
 
   // Test HTTP-based connection (for development)
   const config = {
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
-    apiToken: process.env.CLOUDFLARE_API_TOKEN || '',
-    databaseId: process.env.CLOUDFLARE_DATABASE_ID || 'a9c5bf31-696f-4b74-817e-d4146a628922'
+    accountId: process.env['CLOUDFLARE_ACCOUNT_ID'] || '',
+    apiToken: process.env['CLOUDFLARE_API_TOKEN'] || '',
+    databaseId: process.env['CLOUDFLARE_DATABASE_ID'] || 'a9c5bf31-696f-4b74-817e-d4146a628922'
   };
 
   try {

@@ -135,3 +135,6 @@ dist
 # local db
 prisma/dev.db
 prisma/dev.db*
+
+# serena
+.serena/

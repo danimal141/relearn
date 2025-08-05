@@ -19,6 +19,7 @@ export function createAppConfig(env: WorkerEnv): AppConfig {
     googleDriveFolderId: env.GOOGLE_DRIVE_FOLDER_ID,
     slackWebhookUrl: env.SLACK_WEBHOOK_URL,
     imageCount: Number.parseInt(env.IMAGE_COUNT || '5', 10),
+    geminiApiKey: env.GEMINI_API_KEY,
     // These are not needed in Workers environment
     cloudflareAccountId: '',
     cloudflareApiToken: '',

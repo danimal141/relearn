@@ -1,6 +1,8 @@
 import * as GoogleDrive from "../googledrive/googledrive";
 import * as Slack from "../slack/slack";
 import * as D1 from "../cloudflare/d1/client";
+import { createPrismaD1Client } from "../cloudflare/d1/prisma";
+import { processMultipleImagesWithOcr } from "./ocr-processor";
 import type { AppConfig, AsyncResult } from "../types";
 import type { DriveClient, AuthClient } from "../googledrive/types";
 import type { SlackResult } from "../slack/types";
@@ -17,7 +19,8 @@ export const validateConfig = (config: Partial<AppConfig>): config is AppConfig 
     config.imageCount > 0 &&
     config.cloudflareAccountId &&
     config.cloudflareApiToken &&
-    config.cloudflareDatabaseId
+    config.cloudflareDatabaseId &&
+    config.geminiApiKey
   );
 };
 
@@ -31,6 +34,7 @@ export const parseConfigFromEnv = (): AsyncResult<AppConfig> => {
     cloudflareAccountId: process.env["CLOUDFLARE_ACCOUNT_ID"] || "",
     cloudflareApiToken: process.env["CLOUDFLARE_API_TOKEN"] || "",
     cloudflareDatabaseId: process.env["CLOUDFLARE_DATABASE_ID"] || "",
+    geminiApiKey: process.env["GEMINI_API_KEY"] || "",
   };
 
   if (!validateConfig(config)) {
@@ -38,7 +42,7 @@ export const parseConfigFromEnv = (): AsyncResult<AppConfig> => {
       success: false,
       error: {
         type: "ConfigError",
-        message: "Missing required environment variables: GOOGLE_SERVICE_ACCOUNT_KEY, GOOGLE_DRIVE_FOLDER_ID, SLACK_WEBHOOK_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, CLOUDFLARE_DATABASE_ID"
+        message: "Missing required environment variables: GOOGLE_SERVICE_ACCOUNT_KEY, GOOGLE_DRIVE_FOLDER_ID, SLACK_WEBHOOK_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, CLOUDFLARE_DATABASE_ID, GEMINI_API_KEY"
       }
     });
   }
@@ -193,6 +197,7 @@ export const executeRelearnWorkflow = async (
       data: {
         images: imageResult.data,
         slackResults: [],
+        ocrResults: undefined,
         status: "partial"
       }
     };
@@ -203,6 +208,7 @@ export const executeRelearnWorkflow = async (
     data: {
       images: imageResult.data,
       slackResults: slackResult.data,
+      ocrResults: undefined,
       status: "success"
     }
   };
@@ -219,7 +225,26 @@ export const executeOptimizedRelearnWorkflow = async (
     return driveResult;
   }
 
-  // Initialize D1 Database
+  // Initialize Prisma D1 Database
+  const prismaResult = await createPrismaD1Client({
+    accountId: config.cloudflareAccountId,
+    apiToken: config.cloudflareApiToken,
+    databaseId: config.cloudflareDatabaseId
+  });
+
+  if (!prismaResult.success) {
+    return {
+      success: false,
+      error: {
+        type: "D1Error",
+        message: prismaResult.error.message
+      }
+    };
+  }
+
+  const prismaClient = prismaResult.data;
+
+  // Fetch unprocessed random images using regular D1 for now
   const dbResult = await initializeD1Database(
     config.cloudflareAccountId,
     config.cloudflareApiToken,
@@ -230,7 +255,6 @@ export const executeOptimizedRelearnWorkflow = async (
     return dbResult;
   }
 
-  // Fetch unprocessed random images
   const imageResult = await fetchUnprocessedRandomImages(
     driveResult.data.drive,
     dbResult.data,
@@ -249,9 +273,24 @@ export const executeOptimizedRelearnWorkflow = async (
       data: {
         images: imageResult.data,
         slackResults: [],
+        ocrResults: undefined,
         status: "success"
       }
     };
+  }
+
+  // Process images with OCR
+  const ocrResult = await processMultipleImagesWithOcr({
+    driveClient: driveResult.data.drive,
+    prismaClient,
+    geminiApiKey: config.geminiApiKey,
+    files: imageResult.data.files,
+    maxConcurrent: 3
+  });
+
+  if (!ocrResult.success) {
+    console.warn("OCR processing failed:", ocrResult.error.message);
+    // Continue without OCR results
   }
 
   // Send to Slack
@@ -260,17 +299,17 @@ export const executeOptimizedRelearnWorkflow = async (
     imageResult.data
   );
 
-  // Process and move images (regardless of Slack success)
-  const processResult = await GoogleDrive.processAndMoveImages(
-    driveResult.data.drive,
-    dbResult.data,
-    imageResult.data.files,
-    config.googleDriveFolderId
-  );
+  // Mark images as moved (if OCR was successful)
+  if (ocrResult.success && ocrResult.data.length > 0) {
+    const processResult = await GoogleDrive.moveMultipleImagesToSaved(
+      driveResult.data.drive,
+      imageResult.data.files.map(file => file.id!).filter(Boolean),
+      config.googleDriveFolderId
+    );
 
-  if (!processResult.success) {
-    // Log processing failure but continue
-    console.warn("Failed to process and move images:", processResult.error.message);
+    if (!processResult.success) {
+      console.warn("Failed to move images to saved:", processResult.error.message);
+    }
   }
 
   if (!slackResult.success) {
@@ -280,6 +319,7 @@ export const executeOptimizedRelearnWorkflow = async (
       data: {
         images: imageResult.data,
         slackResults: [],
+        ocrResults: ocrResult.success ? ocrResult.data : undefined,
         status: "partial"
       }
     };
@@ -290,10 +330,11 @@ export const executeOptimizedRelearnWorkflow = async (
     data: {
       images: imageResult.data,
       slackResults: slackResult.data,
+      ocrResults: ocrResult.success ? ocrResult.data : undefined,
       status: "success"
     }
   };
-};
+};;
 
 // Convenience function that handles config parsing (legacy)
 export const runRelearn = async (): AsyncResult<RelearnResult> => {

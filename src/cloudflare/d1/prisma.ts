@@ -186,6 +186,91 @@ export const markImageAsMovedPrisma = async (
   }
 };
 
+// Post operations
+export const insertPostPrisma = async (
+  prisma: PrismaD1Client,
+  data: {
+    id: string;
+    processedImageId: string;
+    content: string;
+    ocrCachedAt?: Date;
+    platform?: string;
+    characterCount?: number;
+  }
+): AsyncResult<void> => {
+  try {
+    await prisma.post.create({
+      data: {
+        id: data.id,
+        processedImageId: data.processedImageId,
+        content: data.content,
+        ocrCachedAt: data.ocrCachedAt ?? null,
+        platform: data.platform || "x",
+        characterCount: data.characterCount ?? null
+      }
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "D1Error",
+        message: `Failed to insert post: ${String(error)}`
+      } as AppError
+    };
+  }
+};
+
+export const getPostByProcessedImageIdPrisma = async (
+  prisma: PrismaD1Client,
+  processedImageId: string
+): AsyncResult<any | null> => {
+  try {
+    const post = await prisma.post.findFirst({
+      where: { processedImageId }
+    });
+
+    return { success: true, data: post };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "D1Error",
+        message: `Failed to get post by processed image ID: ${String(error)}`
+      } as AppError
+    };
+  }
+};
+
+export const updatePostOcrContentPrisma = async (
+  prisma: PrismaD1Client,
+  postId: string,
+  content: string,
+  ocrCachedAt: Date
+): AsyncResult<void> => {
+  try {
+    await prisma.post.update({
+      where: { id: postId },
+      data: {
+        content,
+        ocrCachedAt,
+        characterCount: content.length
+      }
+    });
+
+    return { success: true, data: undefined };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        type: "D1Error",
+        message: `Failed to update post OCR content: ${String(error)}`
+      } as AppError
+    };
+  }
+};
+
 // Check if image is processed using Prisma
 export const isImageProcessedPrisma = async (
   prisma: PrismaD1Client,

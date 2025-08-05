@@ -7,6 +7,7 @@ export type AppConfig = {
   readonly cloudflareAccountId: string;
   readonly cloudflareApiToken: string;
   readonly cloudflareDatabaseId: string;
+  readonly geminiApiKey: string;
 };
 
 // Error types
@@ -15,7 +16,8 @@ export type AppError =
   | { readonly type: "AuthError"; readonly message: string }
   | { readonly type: "DriveError"; readonly message: string }
   | { readonly type: "SlackError"; readonly message: string }
-  | { readonly type: "D1Error"; readonly message: string };
+  | { readonly type: "D1Error"; readonly message: string }
+  | { readonly type: "ProcessingError"; readonly message: string };
 
 // Utility types
 export type NonEmptyArray<T> = readonly [T, ...T[]];

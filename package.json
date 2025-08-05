@@ -27,6 +27,7 @@
   "author": "danimal141",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/adapter-d1": "^5.22.0",
     "@prisma/client": "^5.22.0",
     "@slack/webhook": "^7.0.3",

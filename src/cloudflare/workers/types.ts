@@ -11,6 +11,7 @@ export interface WorkerEnv {
   GOOGLE_DRIVE_FOLDER_ID: string;
   SLACK_WEBHOOK_URL: string;
   IMAGE_COUNT: string;
+  GEMINI_API_KEY: string;
 }
 
 // Worker request context
