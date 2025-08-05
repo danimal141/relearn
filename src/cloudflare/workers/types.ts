@@ -1,12 +1,11 @@
 // Cloudflare Workers environment types
-import type { CloudflareD1Database } from '../d1/types';
-import type { RelearnResult } from '../../relearn/types';
+import type { RelearnResult } from "../../relearn/types";
 
 // Import Cloudflare Workers global types
 /// <reference types="@cloudflare/workers-types" />
 
 export interface WorkerEnv {
-  DB: CloudflareD1Database;
+  DB: D1Database;
   GOOGLE_SERVICE_ACCOUNT_KEY: string;
   GOOGLE_DRIVE_FOLDER_ID: string;
   SLACK_WEBHOOK_URL: string;

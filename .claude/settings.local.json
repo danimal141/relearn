@@ -6,7 +6,8 @@
       "mcp__serena__replace_regex",
       "mcp__serena__find_symbol",
       "mcp__serena__replace_symbol_body",
-      "mcp__serena__execute_shell_command"
+      "mcp__serena__execute_shell_command",
+      "mcp__serena__create_text_file"
     ],
     "deny": []
   }

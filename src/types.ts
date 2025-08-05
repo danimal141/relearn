@@ -23,6 +23,5 @@ export type AppError =
 export type NonEmptyArray<T> = readonly [T, ...T[]];
 
 export type AsyncResult<T, E = AppError> = Promise<
-  | { readonly success: true; readonly data: T }
-  | { readonly success: false; readonly error: E }
+  { readonly success: true; readonly data: T } | { readonly success: false; readonly error: E }
 >;

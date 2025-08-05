@@ -1,6 +1,6 @@
 import { IncomingWebhook } from "@slack/webhook";
 import type { AsyncResult } from "../types";
-import type { SlackWebhook, SlackResult } from "./types";
+import type { SlackResult, SlackWebhook } from "./types";
 
 // Webhook creation
 export const createWebhook = (url: string): AsyncResult<SlackWebhook> => {
@@ -12,8 +12,8 @@ export const createWebhook = (url: string): AsyncResult<SlackWebhook> => {
       success: false,
       error: {
         type: "SlackError",
-        message: `Failed to create Slack webhook: ${String(error)}`
-      }
+        message: `Failed to create Slack webhook: ${String(error)}`,
+      },
     });
   }
 };
@@ -35,8 +35,8 @@ export const sendMessage = async (
       success: false,
       error: {
         type: "SlackError",
-        message: `Failed to send message: ${String(error)}`
-      }
+        message: `Failed to send message: ${String(error)}`,
+      },
     };
   }
 };
@@ -51,7 +51,7 @@ export const sendMessages = async (
   }
 
   try {
-    const messagePromises = messages.map(msg => sendMessage(webhook, msg));
+    const messagePromises = messages.map((msg) => sendMessage(webhook, msg));
     const messageResults = await Promise.all(messagePromises);
 
     const successfulResults: SlackResult[] = [];
@@ -75,16 +75,16 @@ export const sendMessages = async (
       success: false,
       error: {
         type: "SlackError",
-        message: `Failed to send any messages: ${errors.join(", ")}`
-      }
+        message: `Failed to send any messages: ${errors.join(", ")}`,
+      },
     };
   } catch (error) {
     return {
       success: false,
       error: {
         type: "SlackError",
-        message: `Failed to send messages: ${String(error)}`
-      }
+        message: `Failed to send messages: ${String(error)}`,
+      },
     };
   }
 };
@@ -118,7 +118,7 @@ export const formatBatchMessage = (
   }
 
   const headerMessage = `${summary} (${imageLinks.length} images) 🚀`;
-  const imageMessages = imageLinks.map(link => formatImageMessage(link));
+  const imageMessages = imageLinks.map((link) => formatImageMessage(link));
 
   return [headerMessage, ...imageMessages];
 };

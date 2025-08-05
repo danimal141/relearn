@@ -1,6 +1,7 @@
-import { PrismaClient, type ProcessedImage } from '@prisma/client';
-import { PrismaD1 } from '@prisma/adapter-d1';
-import type { AsyncResult, AppError } from "../../types";
+import type { D1Database } from "@cloudflare/workers-types";
+import { PrismaD1 } from "@prisma/adapter-d1";
+import { type Post, PrismaClient, type ProcessedImage } from "@prisma/client";
+import type { AppError, AsyncResult } from "../../types";
 import type { D1Config } from "./types";
 
 // Import Cloudflare Workers global types
@@ -25,10 +26,10 @@ export const createPrismaD1Client = async (config: D1Config): AsyncResult<Prisma
         const response = await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/d1/database/${config.databaseId}/query`,
           {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Authorization': `Bearer ${config.apiToken}`,
-              'Content-Type': 'application/json',
+              Authorization: `Bearer ${config.apiToken}`,
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({ sql }),
           }
@@ -46,14 +47,14 @@ export const createPrismaD1Client = async (config: D1Config): AsyncResult<Prisma
         first: async () => null,
         all: async () => ({ results: [], success: true, meta: {} }),
         run: async () => ({ success: true, meta: {} }),
-        raw: async () => []
+        raw: async () => [],
       }),
 
       batch: async () => [],
-      dump: async () => new ArrayBuffer(0)
+      dump: async () => new ArrayBuffer(0),
     };
 
-    const adapter = new PrismaD1(mockD1Client as any);
+    const adapter = new PrismaD1(mockD1Client as unknown as D1Database);
     const prisma = new PrismaClient({ adapter });
 
     return { success: true, data: prisma };
@@ -62,8 +63,8 @@ export const createPrismaD1Client = async (config: D1Config): AsyncResult<Prisma
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to create Prisma D1 client: ${String(error)}`
-      } as AppError
+        message: `Failed to create Prisma D1 client: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -80,8 +81,8 @@ export const initializePrismaDatabase = async (prisma: PrismaD1Client): AsyncRes
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to initialize Prisma database: ${String(error)}`
-      } as AppError
+        message: `Failed to initialize Prisma database: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -104,8 +105,8 @@ export const insertProcessedImagePrisma = async (
         fileName: data.fileName,
         driveFileId: data.driveFileId,
         processedAt: data.processedAt,
-        movedToSaved: data.movedToSaved || false
-      }
+        movedToSaved: data.movedToSaved || false,
+      },
     });
 
     return { success: true, data: undefined };
@@ -114,8 +115,8 @@ export const insertProcessedImagePrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to insert processed image: ${String(error)}`
-      } as AppError
+        message: `Failed to insert processed image: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -127,7 +128,7 @@ export const getProcessedImagePrisma = async (
 ): AsyncResult<ProcessedImage | null> => {
   try {
     const result = await prisma.processedImage.findUnique({
-      where: { driveFileId }
+      where: { driveFileId },
     });
 
     return { success: true, data: result };
@@ -136,8 +137,8 @@ export const getProcessedImagePrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to get processed image: ${String(error)}`
-      } as AppError
+        message: `Failed to get processed image: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -148,7 +149,7 @@ export const getAllProcessedImagesPrisma = async (
 ): AsyncResult<readonly ProcessedImage[]> => {
   try {
     const results = await prisma.processedImage.findMany({
-      orderBy: { processedAt: 'desc' }
+      orderBy: { processedAt: "desc" },
     });
 
     return { success: true, data: results };
@@ -157,8 +158,8 @@ export const getAllProcessedImagesPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to get all processed images: ${String(error)}`
-      } as AppError
+        message: `Failed to get all processed images: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -171,7 +172,7 @@ export const markImageAsMovedPrisma = async (
   try {
     await prisma.processedImage.update({
       where: { driveFileId },
-      data: { movedToSaved: true }
+      data: { movedToSaved: true },
     });
 
     return { success: true, data: undefined };
@@ -180,8 +181,8 @@ export const markImageAsMovedPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to mark image as moved: ${String(error)}`
-      } as AppError
+        message: `Failed to mark image as moved: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -206,8 +207,8 @@ export const insertPostPrisma = async (
         content: data.content,
         ocrCachedAt: data.ocrCachedAt ?? null,
         platform: data.platform || "x",
-        characterCount: data.characterCount ?? null
-      }
+        characterCount: data.characterCount ?? null,
+      },
     });
 
     return { success: true, data: undefined };
@@ -216,8 +217,8 @@ export const insertPostPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to insert post: ${String(error)}`
-      } as AppError
+        message: `Failed to insert post: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -225,10 +226,10 @@ export const insertPostPrisma = async (
 export const getPostByProcessedImageIdPrisma = async (
   prisma: PrismaD1Client,
   processedImageId: string
-): AsyncResult<any | null> => {
+): AsyncResult<Post | null> => {
   try {
     const post = await prisma.post.findFirst({
-      where: { processedImageId }
+      where: { processedImageId },
     });
 
     return { success: true, data: post };
@@ -237,8 +238,8 @@ export const getPostByProcessedImageIdPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to get post by processed image ID: ${String(error)}`
-      } as AppError
+        message: `Failed to get post by processed image ID: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -255,8 +256,8 @@ export const updatePostOcrContentPrisma = async (
       data: {
         content,
         ocrCachedAt,
-        characterCount: content.length
-      }
+        characterCount: content.length,
+      },
     });
 
     return { success: true, data: undefined };
@@ -265,8 +266,8 @@ export const updatePostOcrContentPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to update post OCR content: ${String(error)}`
-      } as AppError
+        message: `Failed to update post OCR content: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -278,7 +279,7 @@ export const isImageProcessedPrisma = async (
 ): AsyncResult<boolean> => {
   try {
     const result = await prisma.processedImage.findUnique({
-      where: { driveFileId }
+      where: { driveFileId },
     });
 
     return { success: true, data: result !== null };
@@ -287,8 +288,8 @@ export const isImageProcessedPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to check if image is processed: ${String(error)}`
-      } as AppError
+        message: `Failed to check if image is processed: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -306,14 +307,14 @@ export const getUnprocessedImageIdsPrisma = async (
     const processedImages = await prisma.processedImage.findMany({
       where: {
         driveFileId: {
-          in: [...allDriveFileIds]
-        }
+          in: [...allDriveFileIds],
+        },
       },
-      select: { driveFileId: true }
+      select: { driveFileId: true },
     });
 
-    const processedIds = new Set(processedImages.map(img => img.driveFileId));
-    const unprocessedIds = allDriveFileIds.filter(id => !processedIds.has(id));
+    const processedIds = new Set(processedImages.map((img) => img.driveFileId));
+    const unprocessedIds = allDriveFileIds.filter((id) => !processedIds.has(id));
 
     return { success: true, data: unprocessedIds };
   } catch (error) {
@@ -321,8 +322,8 @@ export const getUnprocessedImageIdsPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to get unprocessed image IDs: ${String(error)}`
-      } as AppError
+        message: `Failed to get unprocessed image IDs: ${String(error)}`,
+      } as AppError,
     };
   }
 };
@@ -340,13 +341,13 @@ export const insertMultipleProcessedImagesPrisma = async (
 ): AsyncResult<void> => {
   try {
     await prisma.processedImage.createMany({
-      data: images.map(image => ({
+      data: images.map((image) => ({
         id: image.id,
         fileName: image.fileName,
         driveFileId: image.driveFileId,
         processedAt: image.processedAt,
-        movedToSaved: image.movedToSaved || false
-      }))
+        movedToSaved: image.movedToSaved || false,
+      })),
     });
 
     return { success: true, data: undefined };
@@ -355,8 +356,8 @@ export const insertMultipleProcessedImagesPrisma = async (
       success: false,
       error: {
         type: "D1Error",
-        message: `Failed to insert multiple processed images: ${String(error)}`
-      } as AppError
+        message: `Failed to insert multiple processed images: ${String(error)}`,
+      } as AppError,
     };
   }
 };

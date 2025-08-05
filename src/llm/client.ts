@@ -12,9 +12,7 @@ interface GeminiError {
 
 export const createGeminiClient = (
   config: GeminiClientConfig
-):
-  | { success: true; data: GoogleGenerativeAI }
-  | { success: false; error: GeminiError } => {
+): { success: true; data: GoogleGenerativeAI } | { success: false; error: GeminiError } => {
   if (!config.apiKey) {
     return {
       success: false,
@@ -31,7 +29,7 @@ export const createGeminiClient = (
       success: true,
       data: genAI,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       error: {

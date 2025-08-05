@@ -1,14 +1,11 @@
 import type { drive_v3 } from "googleapis";
 import type { PrismaD1Client } from "../cloudflare/d1/prisma";
-import type { AsyncResult } from "../types";
+import { insertPostPrisma, insertProcessedImagePrisma } from "../cloudflare/d1/prisma";
+import { getFileLink } from "../googledrive/googledrive";
 import type { DriveFile } from "../googledrive/types";
 import { createGeminiClient } from "../llm/client";
 import { extractTextFromImage } from "../llm/ocr";
-import {
-  insertPostPrisma,
-  insertProcessedImagePrisma,
-} from "../cloudflare/d1/prisma";
-import { getFileLink } from "../googledrive/googledrive";
+import type { AsyncResult } from "../types";
 
 interface ProcessImageWithOcrParams {
   driveClient: drive_v3.Drive;
@@ -35,7 +32,17 @@ export const processImageWithOcr = async (
     const postId = crypto.randomUUID();
 
     // Get file link
-    const fileLinkResult = await getFileLink(driveClient, file.id!);
+    const fileId = file.id;
+    if (!fileId) {
+      return {
+        success: false,
+        error: {
+          type: "ProcessingError",
+          message: "File ID is missing",
+        },
+      };
+    }
+    const fileLinkResult = await getFileLink(driveClient, fileId);
     if (!fileLinkResult.success) {
       return {
         success: false,
@@ -49,7 +56,7 @@ export const processImageWithOcr = async (
     // Download image data
     const response = await driveClient.files.get(
       {
-        fileId: file.id!,
+        fileId: fileId,
         alt: "media",
       },
       { responseType: "arraybuffer" }
@@ -74,7 +81,7 @@ export const processImageWithOcr = async (
     const ocrResult = await extractTextFromImage(geminiClientResult.data, {
       imageData,
       mimeType,
-      driveFileId: file.id!,
+      driveFileId: fileId,
     });
 
     if (!ocrResult.success) {
@@ -91,7 +98,7 @@ export const processImageWithOcr = async (
     const insertImageResult = await insertProcessedImagePrisma(prismaClient, {
       id: processedImageId,
       fileName: file.name || "unknown",
-      driveFileId: file.id!,
+      driveFileId: fileId,
       processedAt: new Date(),
       movedToSaved: false,
     });
@@ -156,13 +163,7 @@ interface ProcessMultipleImagesWithOcrParams {
 export const processMultipleImagesWithOcr = async (
   params: ProcessMultipleImagesWithOcrParams
 ): AsyncResult<ProcessImageWithOcrResult[]> => {
-  const {
-    driveClient,
-    prismaClient,
-    geminiApiKey,
-    files,
-    maxConcurrent = 3,
-  } = params;
+  const { driveClient, prismaClient, geminiApiKey, files, maxConcurrent = 3 } = params;
   const results: ProcessImageWithOcrResult[] = [];
   const errors: string[] = [];
 

@@ -12,7 +12,7 @@ const main = async (): Promise<void> => {
     console.log(`📸 Found ${images.files.length} images`);
     console.log(`🔗 Created ${images.links.length} public links`);
     console.log(`💬 Sent ${slackResults.length} Slack messages`);
-    
+
     if (ocrResults && ocrResults.length > 0) {
       console.log(`🔍 Processed ${ocrResults.length} images with OCR`);
     }
@@ -21,14 +21,14 @@ const main = async (): Promise<void> => {
       console.log("\n📋 Image details:");
       images.files.forEach((file, index) => {
         console.log(`  ${index + 1}. ${file.name} (${file.mimeType})`);
-        
+
         // Display OCR content if available
-        const ocrResult = ocrResults?.find((_ocrData) => 
-          images.files.some(f => f.id === file.id)
+        const ocrResult = ocrResults?.find((_ocrData) =>
+          images.files.some((f) => f.id === file.id)
         );
         if (ocrResult) {
-          const preview = ocrResult.content.slice(0, 100).replace(/\n/g, ' ');
-          console.log(`     OCR: ${preview}${ocrResult.content.length > 100 ? '...' : ''}`);
+          const preview = ocrResult.content.slice(0, 100).replace(/\n/g, " ");
+          console.log(`     OCR: ${preview}${ocrResult.content.length > 100 ? "..." : ""}`);
         }
       });
     }

@@ -1,13 +1,8 @@
 import { google } from "googleapis";
-import type { AsyncResult, AppError } from "../types";
-import type {
-  AuthClient,
-  DriveClient,
-  DriveFile,
-  DriveCredentials
-} from "./types";
-import type { D1Database } from "../cloudflare/d1/types";
 import * as D1 from "../cloudflare/d1/client";
+import type { D1Database } from "../cloudflare/d1/types";
+import type { AppError, AsyncResult } from "../types";
+import type { AuthClient, DriveClient, DriveCredentials, DriveFile } from "./types";
 
 // Authentication functions
 export const createAuthClient = (serviceAccountKey: string): AsyncResult<AuthClient> => {
@@ -24,8 +19,8 @@ export const createAuthClient = (serviceAccountKey: string): AsyncResult<AuthCli
       success: false,
       error: {
         type: "AuthError",
-        message: `Failed to create auth client: ${String(error)}`
-      }
+        message: `Failed to create auth client: ${String(error)}`,
+      },
     });
   }
 };
@@ -52,8 +47,8 @@ export const getImageFiles = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to fetch files from folder ${folderId}: ${String(error)}`
-      }
+        message: `Failed to fetch files from folder ${folderId}: ${String(error)}`,
+      },
     };
   }
 };
@@ -101,16 +96,13 @@ export const createPublicPermission = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to create public permission for file ${fileId}: ${String(error)}`
-      }
+        message: `Failed to create public permission for file ${fileId}: ${String(error)}`,
+      },
     };
   }
 };
 
-export const getFileLink = async (
-  drive: DriveClient,
-  fileId: string
-): AsyncResult<string> => {
+export const getFileLink = async (drive: DriveClient, fileId: string): AsyncResult<string> => {
   try {
     const file = await drive.files.get({
       fileId,
@@ -124,8 +116,8 @@ export const getFileLink = async (
         success: false,
         error: {
           type: "DriveError",
-          message: `No link available for file ${fileId}`
-        }
+          message: `No link available for file ${fileId}`,
+        },
       };
     }
 
@@ -135,16 +127,13 @@ export const getFileLink = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to get link for file ${fileId}: ${String(error)}`
-      }
+        message: `Failed to get link for file ${fileId}: ${String(error)}`,
+      },
     };
   }
 };
 
-export const createPublicLink = async (
-  drive: DriveClient,
-  fileId: string
-): AsyncResult<string> => {
+export const createPublicLink = async (drive: DriveClient, fileId: string): AsyncResult<string> => {
   const permissionResult = await createPublicPermission(drive, fileId);
 
   if (!permissionResult.success) {
@@ -159,14 +148,14 @@ export const getPublicLinks = async (
   drive: DriveClient,
   files: readonly DriveFile[]
 ): AsyncResult<readonly string[]> => {
-  const validFiles = files.filter(file => file.id);
+  const validFiles = files.filter((file) => file.id);
 
   if (validFiles.length === 0) {
     return { success: true, data: [] };
   }
 
   try {
-    const linkPromises = validFiles.map(file => {
+    const linkPromises = validFiles.map((file) => {
       if (!file.id) {
         throw new Error("File ID is missing");
       }
@@ -195,16 +184,16 @@ export const getPublicLinks = async (
       success: false,
       error: errors[0] || {
         type: "DriveError",
-        message: "Failed to create any public links"
-      }
+        message: "Failed to create any public links",
+      },
     };
   } catch (error) {
     return {
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to create public links: ${String(error)}`
-      }
+        message: `Failed to create public links: ${String(error)}`,
+      },
     };
   }
 };
@@ -226,8 +215,8 @@ export const getImageMetadata = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to fetch metadata for file ${fileId}: ${String(error)}`
-      }
+        message: `Failed to fetch metadata for file ${fileId}: ${String(error)}`,
+      },
     };
   }
 };
@@ -243,9 +232,9 @@ export const createFolder = async (
       requestBody: {
         name: folderName,
         mimeType: "application/vnd.google-apps.folder",
-        parents: [parentFolderId]
+        parents: [parentFolderId],
       },
-      fields: "id, name, parents"
+      fields: "id, name, parents",
     });
 
     return { success: true, data: response.data };
@@ -254,8 +243,8 @@ export const createFolder = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to create folder ${folderName}: ${String(error)}`
-      }
+        message: `Failed to create folder ${folderName}: ${String(error)}`,
+      },
     };
   }
 };
@@ -269,7 +258,7 @@ export const findFolder = async (
     const response = await drive.files.list({
       q: `name='${folderName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed = false`,
       fields: "files(id, name, parents)",
-      pageSize: 1
+      pageSize: 1,
     });
 
     const folders = response.data.files || [];
@@ -279,8 +268,8 @@ export const findFolder = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to find folder ${folderName}: ${String(error)}`
-      }
+        message: `Failed to find folder ${folderName}: ${String(error)}`,
+      },
     };
   }
 };
@@ -315,7 +304,7 @@ export const moveFileToFolder = async (
     // First get current parents
     const fileResponse = await drive.files.get({
       fileId,
-      fields: "parents"
+      fields: "parents",
     });
 
     const currentParents = fileResponse.data.parents || [];
@@ -326,7 +315,7 @@ export const moveFileToFolder = async (
       fileId,
       addParents: targetFolderId,
       removeParents: previousParents,
-      fields: "id, name, parents"
+      fields: "id, name, parents",
     });
 
     return { success: true, data: response.data };
@@ -335,8 +324,8 @@ export const moveFileToFolder = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to move file ${fileId} to folder ${targetFolderId}: ${String(error)}`
-      }
+        message: `Failed to move file ${fileId} to folder ${targetFolderId}: ${String(error)}`,
+      },
     };
   }
 };
@@ -359,8 +348,8 @@ export const moveImageToSaved = async (
         success: false,
         error: {
           type: "DriveError",
-          message: "Saved folder ID is missing"
-        }
+          message: "Saved folder ID is missing",
+        },
       };
     }
 
@@ -371,8 +360,8 @@ export const moveImageToSaved = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to move image to saved folder: ${String(error)}`
-      }
+        message: `Failed to move image to saved folder: ${String(error)}`,
+      },
     };
   }
 };
@@ -396,12 +385,12 @@ export const moveMultipleImagesToSaved = async (
         success: false,
         error: {
           type: "DriveError",
-          message: "Saved folder ID is missing"
-        }
+          message: "Saved folder ID is missing",
+        },
       };
     }
 
-    const movePromises = fileIds.map(fileId => {
+    const movePromises = fileIds.map((fileId) => {
       if (!savedFolderResult.data.id) {
         throw new Error("Saved folder ID is missing");
       }
@@ -430,16 +419,16 @@ export const moveMultipleImagesToSaved = async (
       success: false,
       error: errors[0] || {
         type: "DriveError",
-        message: "Failed to move any images to saved folder"
-      }
+        message: "Failed to move any images to saved folder",
+      },
     };
   } catch (error) {
     return {
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to move multiple images to saved: ${String(error)}`
-      }
+        message: `Failed to move multiple images to saved: ${String(error)}`,
+      },
     };
   }
 };
@@ -465,7 +454,7 @@ export const getUnprocessedImageFiles = async (
 
   // Get file IDs for database check
   const fileIds = allImages
-    .map(file => file.id)
+    .map((file) => file.id)
     .filter((id): id is string => id !== undefined && id !== null);
 
   if (fileIds.length === 0) {
@@ -482,9 +471,7 @@ export const getUnprocessedImageFiles = async (
   const unprocessedIdSet = new Set(unprocessedIdsResult.data);
 
   // Filter to only unprocessed images
-  const unprocessedImages = allImages.filter(image =>
-    image.id && unprocessedIdSet.has(image.id)
-  );
+  const unprocessedImages = allImages.filter((image) => image.id && unprocessedIdSet.has(image.id));
 
   return { success: true, data: unprocessedImages };
 };
@@ -516,8 +503,8 @@ export const processAndMoveImages = async (
     // Record processed images in database
     const now = new Date().toISOString();
     const processedImages = images
-      .filter(image => image.id && image.name)
-      .map(image => {
+      .filter((image) => image.id && image.name)
+      .map((image) => {
         if (!image.id || !image.name) {
           throw new Error("Image ID or name is missing");
         }
@@ -526,7 +513,7 @@ export const processAndMoveImages = async (
           file_name: image.name,
           drive_file_id: image.id,
           processed_at: now,
-          moved_to_saved: false
+          moved_to_saved: false,
         };
       });
 
@@ -542,7 +529,7 @@ export const processAndMoveImages = async (
     }
 
     // Move images to saved folder
-    const fileIds = processedImages.map(img => img.drive_file_id);
+    const fileIds = processedImages.map((img) => img.drive_file_id);
     const moveResult = await moveMultipleImagesToSaved(drive, fileIds, baseFolderId);
 
     if (!moveResult.success) {
@@ -550,14 +537,12 @@ export const processAndMoveImages = async (
       // Mark them as not moved in the database (already false by default)
       return {
         success: true,
-        data: undefined
+        data: undefined,
       };
     }
 
     // Mark images as moved in database
-    const markPromises = fileIds.map(fileId =>
-      D1.markImageAsMoved(db, fileId)
-    );
+    const markPromises = fileIds.map((fileId) => D1.markImageAsMoved(db, fileId));
 
     await Promise.all(markPromises);
 
@@ -567,8 +552,8 @@ export const processAndMoveImages = async (
       success: false,
       error: {
         type: "DriveError",
-        message: `Failed to process and move images: ${String(error)}`
-      }
+        message: `Failed to process and move images: ${String(error)}`,
+      },
     };
   }
 };

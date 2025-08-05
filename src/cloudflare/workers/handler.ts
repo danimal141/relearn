@@ -1,15 +1,14 @@
-import type { PrismaClient } from '@prisma/client';
-import type { WorkerEnv, RelearnResponse } from './types';
-import type { AppConfig } from '../../types';
-import { createPrismaD1ClientFromBinding } from '../d1/prisma.js';
+import type { AppConfig } from "../../types";
+import { type PrismaD1Client, createPrismaD1ClientFromBinding } from "../d1/prisma.js";
+import type { RelearnResponse, WorkerEnv } from "./types";
 
 // Import Cloudflare Workers global types
 /// <reference types="@cloudflare/workers-types" />
 
 // Initialize Prisma with D1 adapter (official Cloudflare approach)
-export function createPrismaClient(env: WorkerEnv): PrismaClient {
+export function createPrismaClient(env: WorkerEnv): PrismaD1Client {
   // env.DB is a native Cloudflare D1Database binding
-  return createPrismaD1ClientFromBinding(env.DB as any);
+  return createPrismaD1ClientFromBinding(env.DB);
 }
 
 // Convert Worker env to AppConfig
@@ -18,12 +17,12 @@ export function createAppConfig(env: WorkerEnv): AppConfig {
     googleServiceAccountKey: env.GOOGLE_SERVICE_ACCOUNT_KEY,
     googleDriveFolderId: env.GOOGLE_DRIVE_FOLDER_ID,
     slackWebhookUrl: env.SLACK_WEBHOOK_URL,
-    imageCount: Number.parseInt(env.IMAGE_COUNT || '5', 10),
+    imageCount: Number.parseInt(env.IMAGE_COUNT || "5", 10),
     geminiApiKey: env.GEMINI_API_KEY,
     // These are not needed in Workers environment
-    cloudflareAccountId: '',
-    cloudflareApiToken: '',
-    cloudflareDatabaseId: ''
+    cloudflareAccountId: "",
+    cloudflareApiToken: "",
+    cloudflareDatabaseId: "",
   };
 }
 
@@ -34,7 +33,7 @@ export async function handleRelearnWorkflow(env: WorkerEnv): Promise<RelearnResp
     const prisma = createPrismaClient(env);
 
     // Import the optimized workflow
-    const { executeOptimizedRelearnWorkflow } = await import('../../relearn/relearn.js');
+    const { executeOptimizedRelearnWorkflow } = await import("../../relearn/relearn.js");
 
     // Create configuration
     const config = createAppConfig(env);
@@ -48,72 +47,66 @@ export async function handleRelearnWorkflow(env: WorkerEnv): Promise<RelearnResp
     if (result.success) {
       return {
         success: true,
-        data: result.data
+        data: result.data,
       };
     }
     return {
       success: false,
-      error: result.error.message
+      error: result.error.message,
     };
   } catch (error) {
     return {
       success: false,
-      error: `Relearn workflow failed: ${String(error)}`
+      error: `Relearn workflow failed: ${String(error)}`,
     };
   }
 }
 
 // HTTP request handler
-export async function handleFetchRequest(
-  request: Request,
-  env: WorkerEnv
-): Promise<Response> {
+export async function handleFetchRequest(request: Request, env: WorkerEnv): Promise<Response> {
   try {
     const url = new URL(request.url);
     const path = url.pathname;
 
     switch (path) {
-      case '/relearn': {
+      case "/relearn": {
         const result = await handleRelearnWorkflow(env);
         return new Response(JSON.stringify(result), {
-          headers: { 'Content-Type': 'application/json' },
-          status: result.success ? 200 : 500
+          headers: { "Content-Type": "application/json" },
+          status: result.success ? 200 : 500,
         });
       }
 
-      case '/health':
-        return new Response('OK', { status: 200 });
+      case "/health":
+        return new Response("OK", { status: 200 });
 
       default:
-        return new Response('Not Found', { status: 404 });
+        return new Response("Not Found", { status: 404 });
     }
   } catch (error) {
     return new Response(
       JSON.stringify({
         success: false,
-        error: `Request handling failed: ${String(error)}`
+        error: `Request handling failed: ${String(error)}`,
       }),
       {
-        headers: { 'Content-Type': 'application/json' },
-        status: 500
+        headers: { "Content-Type": "application/json" },
+        status: 500,
       }
     );
   }
 }
 
 // Scheduled handler for daily execution
-export async function handleScheduledEvent(
-  _event: ScheduledEvent,
-  env: WorkerEnv
-): Promise<void> {
+export async function handleScheduledEvent(_event: ScheduledEvent, env: WorkerEnv): Promise<void> {
   try {
     const result = await handleRelearnWorkflow(env);
     if (!result.success) {
-      console.error('Scheduled relearn failed:', result.error);
+      console.error("Scheduled relearn failed:", result.error);
     } else {
-      console.log('Scheduled relearn completed successfully');
+      console.log("Scheduled relearn completed successfully");
     }
   } catch (error) {
-    console.error('Scheduled handler error:', error);
+    console.error("Scheduled handler error:", error);
   }
 }

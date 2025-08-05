@@ -1,18 +1,18 @@
-import type { AsyncResult } from "../../types";
-import type { D1Config, ProcessedImageInsert } from "./types";
 import type { ProcessedImage } from "@prisma/client";
+import type { AsyncResult } from "../../types";
 import {
+  type PrismaD1Client,
   createPrismaD1Client,
-  initializePrismaDatabase,
-  insertProcessedImagePrisma,
-  getProcessedImagePrisma,
   getAllProcessedImagesPrisma,
-  markImageAsMovedPrisma,
-  isImageProcessedPrisma,
+  getProcessedImagePrisma,
   getUnprocessedImageIdsPrisma,
+  initializePrismaDatabase,
   insertMultipleProcessedImagesPrisma,
-  type PrismaD1Client
+  insertProcessedImagePrisma,
+  isImageProcessedPrisma,
+  markImageAsMovedPrisma,
 } from "./prisma";
+import type { D1Config, ProcessedImageInsert } from "./types";
 
 // Export Prisma client type as D1Database for backward compatibility
 export type D1Database = PrismaD1Client;
@@ -37,7 +37,7 @@ export const insertProcessedImage = async (
     fileName: image.file_name,
     driveFileId: image.drive_file_id,
     processedAt: new Date(image.processed_at),
-    movedToSaved: image.moved_to_saved || false
+    movedToSaved: image.moved_to_saved || false,
   };
 
   return insertProcessedImagePrisma(db, data);
@@ -56,10 +56,7 @@ export const getAllProcessedImages = async (
   return getAllProcessedImagesPrisma(db);
 };
 
-export const markImageAsMoved = async (
-  db: D1Database,
-  driveFileId: string
-): AsyncResult<void> => {
+export const markImageAsMoved = async (db: D1Database, driveFileId: string): AsyncResult<void> => {
   return markImageAsMovedPrisma(db, driveFileId);
 };
 
@@ -83,12 +80,12 @@ export const insertMultipleProcessedImages = async (
   db: D1Database,
   images: readonly ProcessedImageInsert[]
 ): AsyncResult<void> => {
-  const data = images.map(image => ({
+  const data = images.map((image) => ({
     id: image.id,
     fileName: image.file_name,
     driveFileId: image.drive_file_id,
     processedAt: new Date(image.processed_at),
-    movedToSaved: image.moved_to_saved || false
+    movedToSaved: image.moved_to_saved || false,
   }));
 
   return insertMultipleProcessedImagesPrisma(db, data);
