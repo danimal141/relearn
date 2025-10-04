@@ -9,27 +9,25 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [21.6.0]
+        node-version: [22.x]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{matrix.node-version}}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: node_modules
-          key: node-dependencies-${{ hashFiles('yarn.lock') }}
+          key: node-dependencies-${{ hashFiles('package-lock.json') }}
       - name: Install JavaScript dependencies
         run: |
-          yarn install
+          npm ci
       - name: Start
         run: |
-         yarn build && yarn start
+         npm run build && npm start
         env:
-          DBX_CLIENT_ID: ${{ secrets.DBX_CLIENT_ID }}
-          DBX_CLIENT_SECRET: ${{ secrets.DBX_CLIENT_SECRET }}
-          DBX_REFRESH_TOKEN: ${{ secrets.DBX_REFRESH_TOKEN }}
-          DBX_TARGET_PATH: ${{ secrets.DBX_TARGET_PATH }}
+          GOOGLE_DRIVE_CREDENTIALS: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
