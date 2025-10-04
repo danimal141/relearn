@@ -1,6 +1,6 @@
-import GoogleDriveAdapter from "./googledrive/adapter";
-import SlackAdapter from "./slack/adapter";
-import Executor from "./relearn/executor";
+import createGoogleDriveAdapter from "./googledrive/adapter";
+import createSlackAdapter from "./slack/adapter";
+import createExecutor from "./relearn/executor";
 
 void (async () => {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
@@ -15,13 +15,13 @@ void (async () => {
     throw "GOOGLE_DRIVE_CREDENTIALS and GOOGLE_DRIVE_FOLDER_ID must be set";
   }
 
-  const slackAdapter = new SlackAdapter(webhookUrl);
-  const googleDriveAdapter = new GoogleDriveAdapter(
+  const slackAdapter = createSlackAdapter(webhookUrl);
+  const googleDriveAdapter = createGoogleDriveAdapter(
     googleDriveCredentials.replace(/\n/g, "\\n"),
     googleDriveFolderId
   );
 
-  const executor = new Executor(googleDriveAdapter, slackAdapter);
+  const executor = createExecutor(googleDriveAdapter, slackAdapter);
 
   const status = await executor.relearn();
   console.log(status);
