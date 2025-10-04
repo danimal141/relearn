@@ -1,6 +1,7 @@
 import { IncomingWebhook, IncomingWebhookResult } from "@slack/webhook";
+import { MessageAdapter } from "../relearn/interfaces/message-adapter.interface";
 
-export default class SlackAdapter {
+export default class SlackAdapter implements MessageAdapter {
   private hook: IncomingWebhook;
 
   constructor(url: string) {

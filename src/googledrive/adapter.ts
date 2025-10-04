@@ -1,12 +1,13 @@
 import { google, drive_v3 } from "googleapis";
 import { shuffle, take } from "es-toolkit";
+import { DriveAdapter } from "../relearn/interfaces/drive-adapter.interface";
 
 interface GoogleCredentials {
   client_email: string;
   private_key: string;
 }
 
-export default class GoogleDriveAdapter {
+export default class GoogleDriveAdapter implements DriveAdapter {
   static readonly TARGET_FILE_LIMIT = 1;
   static readonly ASSET_FILE_LIMIT = 100;
   static readonly IMAGE_MIME_TYPES = [

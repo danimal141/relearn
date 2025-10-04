@@ -1,11 +1,11 @@
-import GoogleDriveAdapter from "../googledrive/adapter";
-import SlackAdapter from "../slack/adapter";
+import { DriveAdapter } from "./interfaces/drive-adapter.interface";
+import { MessageAdapter } from "./interfaces/message-adapter.interface";
 
 export default class Executor {
-  private driveAdapter: GoogleDriveAdapter;
-  private slackAdapter: SlackAdapter;
+  private driveAdapter: DriveAdapter;
+  private slackAdapter: MessageAdapter;
 
-  constructor(driveAdapter: GoogleDriveAdapter, slackAdapter: SlackAdapter) {
+  constructor(driveAdapter: DriveAdapter, slackAdapter: MessageAdapter) {
     this.driveAdapter = driveAdapter;
     this.slackAdapter = slackAdapter;
   }
