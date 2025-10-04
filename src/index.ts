@@ -17,7 +17,7 @@ void (async () => {
 
   const slackAdapter = new SlackAdapter(webhookUrl);
   const googleDriveAdapter = new GoogleDriveAdapter(
-    googleDriveCredentials,
+    googleDriveCredentials.replace(/\n/g, "\\n"),
     googleDriveFolderId
   );
 

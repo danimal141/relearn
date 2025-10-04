@@ -1,8 +1,13 @@
 import { google, drive_v3 } from "googleapis";
 import { shuffle, take } from "es-toolkit";
 
+interface GoogleCredentials {
+  client_email: string;
+  private_key: string;
+}
+
 export default class GoogleDriveAdapter {
-  static readonly TARGET_FILE_LIMIT = 5;
+  static readonly TARGET_FILE_LIMIT = 1;
   static readonly ASSET_FILE_LIMIT = 100;
   static readonly IMAGE_MIME_TYPES = [
     "image/jpeg",
@@ -17,8 +22,10 @@ export default class GoogleDriveAdapter {
   private folderId: string;
 
   constructor(credentials: string, folderId: string) {
-    const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(credentials) as object,
+    const parsedCredentials = JSON.parse(credentials) as GoogleCredentials;
+    const auth = new google.auth.JWT({
+      email: parsedCredentials.client_email,
+      key: parsedCredentials.private_key.replace(/\\n/g, "\n"),
       scopes: ["https://www.googleapis.com/auth/drive"],
     });
 
@@ -65,13 +72,8 @@ export default class GoogleDriveAdapter {
             });
           }
 
-          // Get shareable link
-          const file = await this.drive.files.get({
-            fileId: fileId,
-            fields: "webViewLink, webContentLink",
-          });
-
-          return file.data.webContentLink || file.data.webViewLink || null;
+          // Return usercontent link for Slack preview
+          return `https://drive.usercontent.google.com/download?id=${fileId}&export=view&authuser=0`;
         } catch (err) {
           console.error(`Failed to create link for ${fileId}:`, err);
           return null;
