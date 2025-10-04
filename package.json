@@ -1,6 +1,6 @@
 {
   "name": "relearn",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "main": "./dist/index.js",
   "repository": "git@github.com:danimal141/relearn.git",
   "author": "danimal141 <hideaki.ishii1204@gmail.com>",
