@@ -15,53 +15,44 @@ export type RelearnResult =
       readonly evacuated: DriveOperationResult;
     };
 
-interface ExecutorService {
+export interface ExecutorService {
   relearn(): Promise<RelearnResult>;
 }
 
-type Executor = {
-  readonly driveAdapter: DriveAdapter;
-  readonly slackAdapter: MessageAdapter;
-};
+export class Executor implements ExecutorService {
+  constructor(
+    private readonly driveAdapter: DriveAdapter,
+    private readonly slackAdapter: MessageAdapter
+  ) {}
 
-const relearn = async (executor: Executor): Promise<RelearnResult> => {
-  const paths = await executor.driveAdapter.getTargetPaths();
-  if (paths.length === 0) {
-    // There is no target which we can relearn
-    // Revive assets
-    const reviveResult = await executor.driveAdapter.reviveSharedFiles();
-    // Try relearning next time
+  async relearn(): Promise<RelearnResult> {
+    const paths = await this.driveAdapter.getTargetPaths();
+    if (paths.length === 0) {
+      // There is no target which we can relearn
+      // Revive assets
+      const reviveResult = await this.driveAdapter.reviveSharedFiles();
+      // Try relearning next time
+      return {
+        kind: "revived",
+        revived: reviveResult,
+      };
+    }
+
+    const links = await this.driveAdapter.getAssetLinks(paths);
+
+    // Send shared links to Slack
+    for (const link of links) {
+      await this.slackAdapter.send(link);
+    }
+
+    // Evacuate the shared files
+    const evacuated = await this.driveAdapter.evacuateRelearnedFiles(paths);
     return {
-      kind: "revived",
-      revived: reviveResult,
+      kind: "relearned",
+      linksShared: links.length,
+      evacuated,
     };
   }
-
-  const links = await executor.driveAdapter.getAssetLinks(paths);
-
-  // Send shared links to Slack
-  for (const link of links) {
-    await executor.slackAdapter.send(link);
-  }
-
-  // Evacuate the shared files
-  const evacuated = await executor.driveAdapter.evacuateRelearnedFiles(paths);
-  return {
-    kind: "relearned",
-    linksShared: links.length,
-    evacuated,
-  };
-};
-
-export const Executor = (
-  driveAdapter: DriveAdapter,
-  slackAdapter: MessageAdapter
-) => {
-  const executor: Executor = { driveAdapter, slackAdapter };
-
-  return {
-    relearn: () => relearn(executor),
-  } satisfies ExecutorService;
-};
+}
 
 export default Executor;

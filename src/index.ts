@@ -15,13 +15,13 @@ void (async () => {
   const googleDriveCredentials = requireEnv("GOOGLE_DRIVE_CREDENTIALS");
   const googleDriveFolderId = requireEnv("GOOGLE_DRIVE_FOLDER_ID");
 
-  const slackAdapter = SlackAdapter(webhookUrl);
-  const googleDriveAdapter = GoogleDriveAdapter(
+  const slackAdapter = new SlackAdapter(webhookUrl);
+  const googleDriveAdapter = new GoogleDriveAdapter(
     googleDriveCredentials.replace(/\n/g, "\\n"),
     googleDriveFolderId
   );
 
-  const executor = Executor(googleDriveAdapter, slackAdapter);
+  const executor = new Executor(googleDriveAdapter, slackAdapter);
 
   const status = await executor.relearn();
   console.log(status);
