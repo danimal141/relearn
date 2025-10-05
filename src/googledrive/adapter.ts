@@ -1,6 +1,10 @@
 import { google, drive_v3 } from "googleapis";
 import { shuffle, take } from "es-toolkit";
-import { DriveAdapter } from "../relearn/interfaces/drive-adapter.interface";
+import {
+  DriveAdapter,
+  DriveOperationFailure,
+  DriveOperationResult,
+} from "../relearn/interfaces/drive-adapter.interface";
 
 interface GoogleCredentials {
   client_email: string;
@@ -16,22 +20,34 @@ export const IMAGE_MIME_TYPES = [
   "image/gif",
   "image/webp",
   "image/bmp",
-];
+] as const;
+
+const IMAGE_MIME_TYPE_SET = new Set<string>(IMAGE_MIME_TYPES);
 
 type GoogleDriveAdapter = {
   readonly drive: drive_v3.Drive;
   readonly folderId: string;
 };
 
+const toFailure = (id: string, error: unknown): DriveOperationFailure => ({
+  id,
+  reason: error instanceof Error ? error.message : String(error),
+});
+
+const createResult = (): DriveOperationResult => ({
+  succeeded: [],
+  failed: [],
+});
+
 const listFiles = async (
   adapter: GoogleDriveAdapter,
   folderId: string,
-  limit?: number
+  limit: number = ASSET_FILE_LIMIT
 ): Promise<drive_v3.Schema$File[]> => {
   try {
     const response = await adapter.drive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
-      pageSize: limit || ASSET_FILE_LIMIT,
+      pageSize: limit,
       fields: "files(id, name, mimeType)",
     });
     return response.data.files || [];
@@ -78,7 +94,7 @@ const getTargetPaths = async (
   if (files.length === 0) return [];
 
   const imageFiles = files.filter((file) =>
-    IMAGE_MIME_TYPES.includes(file.mimeType || "")
+    IMAGE_MIME_TYPE_SET.has(file.mimeType ?? "")
   );
 
   return take(
@@ -130,10 +146,10 @@ const getAssetLinks = async (
 const evacuateRelearnedFiles = async (
   adapter: GoogleDriveAdapter,
   fileIds: string[]
-): Promise<number> => {
+): Promise<DriveOperationResult> => {
   const tmpFolderId = await getOrCreateTmpFolder(adapter);
 
-  let successCount = 0;
+  const result = createResult();
   for (const fileId of fileIds) {
     try {
       await adapter.drive.files.update({
@@ -141,22 +157,23 @@ const evacuateRelearnedFiles = async (
         addParents: tmpFolderId,
         removeParents: adapter.folderId,
       });
-      successCount++;
+      result.succeeded.push(fileId);
     } catch (err) {
       console.error(`Failed to move file ${fileId}:`, err);
+      result.failed.push(toFailure(fileId, err));
     }
   }
 
-  return successCount;
+  return result;
 };
 
 const reviveSharedFiles = async (
   adapter: GoogleDriveAdapter
-): Promise<number> => {
+): Promise<DriveOperationResult> => {
   const tmpFolderId = await getOrCreateTmpFolder(adapter);
   const files = await listFiles(adapter, tmpFolderId);
 
-  let successCount = 0;
+  const result = createResult();
   for (const file of files) {
     if (!file.id) continue;
 
@@ -166,13 +183,14 @@ const reviveSharedFiles = async (
         addParents: adapter.folderId,
         removeParents: tmpFolderId,
       });
-      successCount++;
+      result.succeeded.push(file.id);
     } catch (err) {
       console.error(`Failed to revive file ${file.id}:`, err);
+      result.failed.push(toFailure(file.id, err));
     }
   }
 
-  return successCount;
+  return result;
 };
 
 export const GoogleDriveAdapter = (

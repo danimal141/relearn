@@ -1,3 +1,3 @@
 export interface MessageAdapter {
-  send(message: string): Promise<any>;
+  send(message: string): Promise<void>;
 }

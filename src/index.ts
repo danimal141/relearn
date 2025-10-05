@@ -3,17 +3,17 @@ import { SlackAdapter } from "./slack/adapter";
 import { Executor } from "./relearn/executor";
 
 void (async () => {
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-  const googleDriveCredentials = process.env.GOOGLE_DRIVE_CREDENTIALS;
-  const googleDriveFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const requireEnv = (key: string): string => {
+    const value = process.env[key]?.trim();
+    if (!value) {
+      throw new Error(`${key} is not set`);
+    }
+    return value;
+  };
 
-  if (webhookUrl == null) {
-    throw "SLACK_WEBHOOK_URL is not set";
-  }
-
-  if (googleDriveCredentials == null || googleDriveFolderId == null) {
-    throw "GOOGLE_DRIVE_CREDENTIALS and GOOGLE_DRIVE_FOLDER_ID must be set";
-  }
+  const webhookUrl = requireEnv("SLACK_WEBHOOK_URL");
+  const googleDriveCredentials = requireEnv("GOOGLE_DRIVE_CREDENTIALS");
+  const googleDriveFolderId = requireEnv("GOOGLE_DRIVE_FOLDER_ID");
 
   const slackAdapter = SlackAdapter(webhookUrl);
   const googleDriveAdapter = GoogleDriveAdapter(
