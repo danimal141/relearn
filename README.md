@@ -8,38 +8,56 @@ classDiagram
     class Executor {
         -DriveAdapter driveAdapter
         -MessageAdapter slackAdapter
-        +relearn() Promise~number~
+        +relearn() Promise~RelearnResult~
     }
 
     class DriveAdapter {
         <<interface>>
         +getTargetPaths() Promise~string[]~
         +getAssetLinks(fileIds: string[]) Promise~string[]~
-        +evacuateRelearnedFiles(fileIds: string[]) Promise~number~
-        +reviveSharedFiles() Promise~number~
+        +evacuateRelearnedFiles(fileIds: string[]) Promise~DriveOperationResult~
+        +reviveSharedFiles() Promise~DriveOperationResult~
     }
 
     class MessageAdapter {
         <<interface>>
-        +send(message: string) Promise~any~
+        +send(message: string) Promise~void~
     }
 
     class GoogleDriveAdapter {
         +getTargetPaths() Promise~string[]~
         +getAssetLinks(fileIds: string[]) Promise~string[]~
-        +evacuateRelearnedFiles(fileIds: string[]) Promise~number~
-        +reviveSharedFiles() Promise~number~
+        +evacuateRelearnedFiles(fileIds: string[]) Promise~DriveOperationResult~
+        +reviveSharedFiles() Promise~DriveOperationResult~
     }
 
     class SlackAdapter {
-        +send(message: string) Promise~any~
+        +send(message: string) Promise~void~
+    }
+
+    class RelearnResult {
+        <<union>>
+    }
+
+    class DriveOperationResult {
+        +succeeded string[]
+        +failed DriveOperationFailure[]
+    }
+
+    class DriveOperationFailure {
+        +id string
+        +reason string
     }
 
     Executor --> DriveAdapter
     Executor --> MessageAdapter
     GoogleDriveAdapter ..|> DriveAdapter
     SlackAdapter ..|> MessageAdapter
+    RelearnResult --> DriveOperationResult
+    DriveOperationResult --> DriveOperationFailure
 ```
+
+`RelearnResult` is a discriminated union keyed by the `kind` property. It captures either the outcome of sending reminders again or restoring evacuated files. `DriveOperationResult` returns arrays of successful and failed Google Drive operations so downstream logging and retry logic can consume the details.
 
 ## Motivation
 When I find some good tweets or posts etc.. I take a screenshot and upload it to my Google Drive, but I never check it again...
