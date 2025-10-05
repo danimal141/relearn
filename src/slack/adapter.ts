@@ -2,28 +2,28 @@ import { IncomingWebhook, IncomingWebhookResult } from "@slack/webhook";
 import { MessageAdapter } from "../relearn/interfaces/message-adapter.interface";
 
 type SlackAdapter = {
-  hook: IncomingWebhook;
+  readonly hook: IncomingWebhook;
 };
 
 const send = async (
-  self: SlackAdapter,
+  adapter: SlackAdapter,
   message: string
 ): Promise<IncomingWebhookResult> => {
   // Reference: https://api.slack.com/reference/messaging/link-unfurling#configure_scopes
-  return self.hook.send({
+  return adapter.hook.send({
     text: `<${message}>`,
     unfurl_links: true, // To show the preview
   });
 };
 
-export const createSlackAdapter = (url: string): MessageAdapter => {
-  const self: SlackAdapter = {
+export const SlackAdapter = (url: string): MessageAdapter => {
+  const adapter: SlackAdapter = {
     hook: new IncomingWebhook(url),
   };
 
   return {
-    send: (message: string) => send(self, message),
-  };
+    send: (message: string) => send(adapter, message),
+  } satisfies MessageAdapter;
 };
 
-export default createSlackAdapter;
+export default SlackAdapter;
