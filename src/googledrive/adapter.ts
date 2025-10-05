@@ -1,26 +1,32 @@
 import { google, drive_v3 } from "googleapis";
 import { shuffle, take } from "es-toolkit";
-import { DriveAdapter } from "../relearn/interfaces/drive-adapter.interface";
+import {
+  DriveAdapter,
+  DriveOperationFailure,
+  DriveOperationResult,
+} from "../relearn/interfaces/drive-adapter.interface";
 
 interface GoogleCredentials {
   client_email: string;
   private_key: string;
 }
 
-export default class GoogleDriveAdapter implements DriveAdapter {
-  static readonly TARGET_FILE_LIMIT = 1;
-  static readonly ASSET_FILE_LIMIT = 100;
-  static readonly IMAGE_MIME_TYPES = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-    "image/bmp",
-  ];
+export const TARGET_FILE_LIMIT = 1;
+export const ASSET_FILE_LIMIT = 100;
+export const IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/bmp",
+] as const;
 
-  private drive: drive_v3.Drive;
-  private folderId: string;
+const IMAGE_MIME_TYPE_SET = new Set<string>(IMAGE_MIME_TYPES);
+
+export class GoogleDriveAdapter implements DriveAdapter {
+  private readonly drive: drive_v3.Drive;
+  private readonly folderId: string;
 
   constructor(credentials: string, folderId: string) {
     const parsedCredentials = JSON.parse(credentials) as GoogleCredentials;
@@ -34,38 +40,36 @@ export default class GoogleDriveAdapter implements DriveAdapter {
     this.folderId = folderId;
   }
 
-  public async getTargetPaths(): Promise<string[]> {
+  async getTargetPaths(): Promise<string[]> {
     const files = await this.listFiles(this.folderId);
     if (files.length === 0) return [];
 
     const imageFiles = files.filter((file) =>
-      GoogleDriveAdapter.IMAGE_MIME_TYPES.includes(file.mimeType || "")
+      IMAGE_MIME_TYPE_SET.has(file.mimeType ?? "")
     );
 
     return take(
       shuffle(imageFiles.map((file) => file.id)),
-      GoogleDriveAdapter.TARGET_FILE_LIMIT
+      TARGET_FILE_LIMIT
     ).filter((id): id is string => id != null);
   }
 
-  public async getAssetLinks(fileIds: string[]): Promise<string[]> {
+  async getAssetLinks(fileIds: string[]): Promise<string[]> {
     const links = await Promise.all(
       fileIds.map(async (fileId) => {
         try {
-          // Check if file is already shared
           const permissions = await this.drive.permissions.list({
-            fileId: fileId,
+            fileId,
             fields: "permissions(id, type)",
           });
 
           const isPublic = permissions.data.permissions?.some(
-            (p) => p.type === "anyone"
+            (permission) => permission.type === "anyone"
           );
 
           if (!isPublic) {
-            // Create public share permission
             await this.drive.permissions.create({
-              fileId: fileId,
+              fileId,
               requestBody: {
                 role: "reader",
                 type: "anyone",
@@ -73,7 +77,6 @@ export default class GoogleDriveAdapter implements DriveAdapter {
             });
           }
 
-          // Return usercontent link for Slack preview
           return `https://drive.usercontent.google.com/download?id=${fileId}&export=view&authuser=0`;
         } catch (err) {
           console.error(`Failed to create link for ${fileId}:`, err);
@@ -85,31 +88,34 @@ export default class GoogleDriveAdapter implements DriveAdapter {
     return links.filter((link): link is string => link != null);
   }
 
-  public async evacuateRelearnedFiles(fileIds: string[]): Promise<number> {
+  async evacuateRelearnedFiles(
+    fileIds: string[]
+  ): Promise<DriveOperationResult> {
     const tmpFolderId = await this.getOrCreateTmpFolder();
+    const result = GoogleDriveAdapter.createResult();
 
-    let successCount = 0;
     for (const fileId of fileIds) {
       try {
         await this.drive.files.update({
-          fileId: fileId,
+          fileId,
           addParents: tmpFolderId,
           removeParents: this.folderId,
         });
-        successCount++;
+        result.succeeded.push(fileId);
       } catch (err) {
         console.error(`Failed to move file ${fileId}:`, err);
+        result.failed.push(GoogleDriveAdapter.toFailure(fileId, err));
       }
     }
 
-    return successCount;
+    return result;
   }
 
-  public async reviveSharedFiles(): Promise<number> {
+  async reviveSharedFiles(): Promise<DriveOperationResult> {
     const tmpFolderId = await this.getOrCreateTmpFolder();
     const files = await this.listFiles(tmpFolderId);
+    const result = GoogleDriveAdapter.createResult();
 
-    let successCount = 0;
     for (const file of files) {
       if (!file.id) continue;
 
@@ -119,17 +125,34 @@ export default class GoogleDriveAdapter implements DriveAdapter {
           addParents: this.folderId,
           removeParents: tmpFolderId,
         });
-        successCount++;
+        result.succeeded.push(file.id);
       } catch (err) {
         console.error(`Failed to revive file ${file.id}:`, err);
+        result.failed.push(GoogleDriveAdapter.toFailure(file.id, err));
       }
     }
 
-    return successCount;
+    return result;
+  }
+
+  private async listFiles(
+    folderId: string,
+    limit: number = ASSET_FILE_LIMIT
+  ): Promise<drive_v3.Schema$File[]> {
+    try {
+      const response = await this.drive.files.list({
+        q: `'${folderId}' in parents and trashed = false`,
+        pageSize: limit,
+        fields: "files(id, name, mimeType)",
+      });
+      return response.data.files || [];
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
   }
 
   private async getOrCreateTmpFolder(): Promise<string> {
-    // Check if tmp folder already exists
     const response = await this.drive.files.list({
       q: `'${this.folderId}' in parents and name = 'tmp' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
       fields: "files(id)",
@@ -141,7 +164,6 @@ export default class GoogleDriveAdapter implements DriveAdapter {
       return folderId;
     }
 
-    // Create tmp folder
     const folder = await this.drive.files.create({
       requestBody: {
         name: "tmp",
@@ -156,20 +178,19 @@ export default class GoogleDriveAdapter implements DriveAdapter {
     return folderId;
   }
 
-  private async listFiles(
-    folderId: string,
-    limit?: number
-  ): Promise<drive_v3.Schema$File[]> {
-    try {
-      const response = await this.drive.files.list({
-        q: `'${folderId}' in parents and trashed = false`,
-        pageSize: limit || GoogleDriveAdapter.ASSET_FILE_LIMIT,
-        fields: "files(id, name, mimeType)",
-      });
-      return response.data.files || [];
-    } catch (err) {
-      console.error(err);
-      return [];
-    }
+  private static toFailure(id: string, error: unknown): DriveOperationFailure {
+    return {
+      id,
+      reason: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  private static createResult(): DriveOperationResult {
+    return {
+      succeeded: [],
+      failed: [],
+    };
   }
 }
+
+export default GoogleDriveAdapter;
