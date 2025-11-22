@@ -11,7 +11,7 @@ interface GoogleCredentials {
   private_key: string;
 }
 
-export const TARGET_FILE_LIMIT = 3;
+export const TARGET_FILE_LIMIT = 1;
 export const ASSET_FILE_LIMIT = 100;
 export const IMAGE_MIME_TYPES = [
   "image/jpeg",
