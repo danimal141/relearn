@@ -31,7 +31,7 @@
     "env-cmd": "^10.1.0",
     "es-toolkit": "^1.39.10",
     "eslint": "^8.11.0",
-    "eslint-config-prettier": "^8.5.0",
+    "eslint-config-prettier": "^10.0.0",
     "googleapis": "^161.0.0",
     "husky": "^7.0.4",
     "lint-staged": "^12.3.5",
